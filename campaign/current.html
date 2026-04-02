@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캠페인 애널리틱스 — 현재안</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { width: 240px; background: #fff; border-right: 1px solid #e5e5e5; flex-shrink: 0; padding: 16px 0; }
+  .sidebar-section { padding: 8px 16px; }
+  .sidebar-title { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sidebar-item { padding: 8px 16px; font-size: 14px; color: #555; cursor: pointer; border-radius: 6px; margin: 2px 8px; }
+  .sidebar-item:hover { background: #f5f5f5; }
+  .sidebar-item.active { background: #EEF2FF; color: #4F46E5; font-weight: 600; }
+  .sidebar-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; }
+  .sidebar-dot.purple { background: #7C3AED; }
+
+  /* Main */
+  .main { flex: 1; padding: 32px; max-width: 1280px; }
+
+  /* Page header */
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .page-desc { font-size: 13px; color: #888; }
+
+  /* Score cards */
+  .scorecards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .scorecard { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 20px; }
+  .scorecard-label { font-size: 13px; color: #888; display: flex; align-items: center; gap: 4px; margin-bottom: 12px; }
+  .scorecard-label .help { width: 16px; height: 16px; border-radius: 50%; background: #eee; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #888; cursor: help; }
+  .scorecard-value { font-size: 26px; font-weight: 700; }
+
+  /* Filters */
+  .filters { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-label { font-size: 12px; color: #888; font-weight: 500; }
+  .filter-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer; min-width: 160px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M3 5l3 3 3-3'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+  .filter-right { display: flex; gap: 12px; }
+  .date-input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; min-width: 300px; }
+
+  /* Chart area */
+  .chart-container { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 24px; margin-bottom: 24px; }
+  .chart-area { width: 100%; height: 300px; position: relative; overflow: hidden; }
+  .chart-svg { width: 100%; height: 260px; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; padding-top: 16px; border-top: 1px solid #f0f0f0; margin-top: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+  .legend-line { width: 14px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+
+  /* Table */
+  .table-container { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 24px; }
+  .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .table-title { font-size: 16px; font-weight: 600; }
+  .table-count { font-size: 13px; color: #888; margin-left: 8px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 12px; font-size: 12px; color: #888; font-weight: 500; border-bottom: 1px solid #e5e5e5; white-space: nowrap; }
+  th.right, td.right { text-align: right; }
+  td { padding: 14px 12px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  td.name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  tr:hover { background: #fafafa; }
+
+  .checkbox { width: 16px; height: 16px; accent-color: #4F46E5; cursor: pointer; }
+
+  /* Pagination */
+  .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+  .pagination-info { font-size: 12px; color: #888; }
+  .pagination-controls { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .pagination-btn { padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">메시지 캠페인</div>
+      <div class="sidebar-item">메시지 발송하기</div>
+      <div class="sidebar-item">캠페인 목록</div>
+      <div class="sidebar-item active"><span class="sidebar-dot purple"></span>캠페인 애널리틱스</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="page-header">
+      <div class="page-title">캠페인 애널리틱스</div>
+      <div class="page-desc">메시지 캠페인 성과를 캠페인 유형별/고객유형별로 확인해보세요. (현재 자동화 캠페인 애널리틱스만 제공됩니다.)</div>
+    </div>
+
+    <!-- Score Cards -->
+    <div class="scorecards">
+      <div class="scorecard">
+        <div class="scorecard-label">발송 비용 <span class="help">?</span></div>
+        <div class="scorecard-value">140,630원</div>
+      </div>
+      <div class="scorecard">
+        <div class="scorecard-label">전환 금액 <span class="help">?</span></div>
+        <div class="scorecard-value">1,103,200원</div>
+      </div>
+      <div class="scorecard">
+        <div class="scorecard-label">ROAS <span class="help">?</span></div>
+        <div class="scorecard-value">784.47%</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-group">
+        <div class="filter-label">분석 기간</div>
+        <div class="date-input">📅 최근 30일 | 2026년 3월 3일 ~ 2026년 4월 1일</div>
+      </div>
+      <div class="filter-right">
+        <div class="filter-group">
+          <div class="filter-label">보기 기준</div>
+          <select class="filter-select">
+            <option>캠페인</option>
+            <option>세그먼트</option>
+            <option>전체</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">지표 선택</div>
+          <select class="filter-select">
+            <option>수신 성공 수</option>
+            <option>클릭률</option>
+            <option>전환율</option>
+            <option>기여금액</option>
+            <option>ROAS</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+      <svg class="chart-svg" viewBox="0 0 1000 260">
+        <!-- Grid lines -->
+        <line x1="40" y1="20" x2="980" y2="20" stroke="#f0f0f0" stroke-width="1"/>
+        <line x1="40" y1="68" x2="980" y2="68" stroke="#f0f0f0" stroke-width="1"/>
+        <line x1="40" y1="116" x2="980" y2="116" stroke="#f0f0f0" stroke-width="1"/>
+        <line x1="40" y1="164" x2="980" y2="164" stroke="#f0f0f0" stroke-width="1"/>
+        <line x1="40" y1="212" x2="980" y2="212" stroke="#f0f0f0" stroke-width="1"/>
+
+        <!-- Y axis labels -->
+        <text x="30" y="24" text-anchor="end" font-size="11" fill="#999">20건</text>
+        <text x="30" y="72" text-anchor="end" font-size="11" fill="#999">15건</text>
+        <text x="30" y="120" text-anchor="end" font-size="11" fill="#999">10건</text>
+        <text x="30" y="168" text-anchor="end" font-size="11" fill="#999">5건</text>
+        <text x="30" y="216" text-anchor="end" font-size="11" fill="#999">0건</text>
+
+        <!-- X axis labels -->
+        <text x="100" y="240" text-anchor="middle" font-size="11" fill="#999">03.03</text>
+        <text x="200" y="240" text-anchor="middle" font-size="11" fill="#999">03.07</text>
+        <text x="300" y="240" text-anchor="middle" font-size="11" fill="#999">03.10</text>
+        <text x="400" y="240" text-anchor="middle" font-size="11" fill="#999">03.13</text>
+        <text x="500" y="240" text-anchor="middle" font-size="11" fill="#999">03.17</text>
+        <text x="600" y="240" text-anchor="middle" font-size="11" fill="#999">03.20</text>
+        <text x="700" y="240" text-anchor="middle" font-size="11" fill="#999">03.24</text>
+        <text x="800" y="240" text-anchor="middle" font-size="11" fill="#999">03.27</text>
+        <text x="900" y="240" text-anchor="middle" font-size="11" fill="#999">03.31</text>
+
+        <!-- Line 1 - Blue -->
+        <polyline points="100,140 170,100 240,120 310,80 380,90 450,60 520,70 590,110 660,130 730,100 800,120 870,90 940,110" fill="none" stroke="#2563EB" stroke-width="2"/>
+        <!-- Line 2 - Orange -->
+        <polyline points="100,160 170,130 240,150 310,110 380,140 450,100 520,90 590,130 660,120 730,150 800,140 870,160 940,130" fill="none" stroke="#F59E0B" stroke-width="2"/>
+        <!-- Line 3 - Green -->
+        <polyline points="100,170 170,150 240,160 310,140 380,130 450,120 520,140 590,150 660,160 730,140 800,130 870,150 940,160" fill="none" stroke="#10B981" stroke-width="2"/>
+        <!-- Line 4 - Purple -->
+        <polyline points="100,120 170,140 240,110 310,130 380,100 450,80 520,110 590,90 660,100 730,80 800,110 870,100 940,80" fill="none" stroke="#6366F1" stroke-width="2"/>
+        <!-- Line 5 - Red -->
+        <polyline points="100,180 170,170 240,190 310,160 380,170 450,150 520,160 590,170 660,180 730,170 800,160 870,180 940,170" fill="none" stroke="#EF4444" stroke-width="2"/>
+        <!-- Line 6 - Pink -->
+        <polyline points="100,150 170,160 240,140 310,150 380,160 450,140 520,130 590,140 660,150 730,160 800,150 870,140 940,150" fill="none" stroke="#EC4899" stroke-width="2"/>
+        <!-- Line 7 - Mint -->
+        <polyline points="100,190 170,180 240,170 310,190 380,180 450,170 520,180 590,190 660,170 730,180 800,190 870,170 940,180" fill="none" stroke="#14B8A6" stroke-width="2"/>
+        <!-- Line 8 - Violet -->
+        <polyline points="100,130 170,110 240,130 310,120 380,110 450,130 520,120 590,100 660,110 730,120 800,100 870,110 940,120" fill="none" stroke="#A855F7" stroke-width="2"/>
+        <!-- Line 9 - Mustard -->
+        <polyline points="100,200 170,190 240,200 310,180 380,190 450,180 520,190 590,200 660,190 730,200 800,190 870,200 940,190" fill="none" stroke="#EAB308" stroke-width="2"/>
+        <!-- Line 10 - Light Blue -->
+        <polyline points="100,145 170,155 240,135 310,145 380,155 450,145 520,155 590,145 660,155 730,145 800,155 870,145 940,155" fill="none" stroke="#3B82F6" stroke-width="2"/>
+      </svg>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item"><span class="legend-line" style="background:#2563EB"></span>[미구매] A-1-쿠폰팩 상기</div>
+        <div class="legend-item"><span class="legend-line" style="background:#F59E0B"></span>[장바구니 이탈] A-2</div>
+        <div class="legend-item"><span class="legend-line" style="background:#10B981"></span>[미구매] A-1-쿠폰팩 상기_L</div>
+        <div class="legend-item"><span class="legend-line" style="background:#6366F1"></span>위트빅스 쓰곤_리필_11일</div>
+        <div class="legend-item"><span class="legend-line" style="background:#EF4444"></span>[장바구니 이탈] A-2_</div>
+        <div class="legend-item"><span class="legend-line" style="background:#EC4899"></span>[미구매] A-3-쿠폰팩 소멸 상기(복사본)</div>
+        <div class="legend-item"><span class="legend-line" style="background:#14B8A6"></span>[미구매] A-8-2000원 쿠폰(복사본)</div>
+        <div class="legend-item"><span class="legend-line" style="background:#A855F7"></span>위트빅스 할인상품_리필_30일</div>
+        <div class="legend-item"><span class="legend-line" style="background:#EAB308"></span>[미구매] A-5-1000원 쿠폰(복사본)</div>
+        <div class="legend-item"><span class="legend-line" style="background:#3B82F6"></span>위트빅스 오리지널_리필_40일</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <div class="table-header">
+        <div style="display:flex;align-items:center;">
+          <div class="table-title">캠페인 목록</div>
+          <span class="table-count">10/21 선택</span>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" class="checkbox" checked></th>
+            <th>제목</th>
+            <th class="right">수신 성공 수</th>
+            <th class="right">클릭 수</th>
+            <th class="right">전환 수</th>
+            <th class="right">전환 금액</th>
+            <th class="right">발송 비용</th>
+            <th class="right">ROAS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[미구매] A-1-쿠폰팩 상기</td>
+            <td class="right">1</td>
+            <td class="right">1 (100%)</td>
+            <td class="right">1 (100%)</td>
+            <td class="right">59,800원</td>
+            <td class="right">25원</td>
+            <td class="right">239,200%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[장바구니 이탈] A-2</td>
+            <td class="right">3</td>
+            <td class="right">2 (66.67%)</td>
+            <td class="right">1 (33.33%)</td>
+            <td class="right">59,900원</td>
+            <td class="right">75원</td>
+            <td class="right">79,733.33%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[오전 10시|30분 딜레이] 장바구니 이...</td>
+            <td class="right">0</td>
+            <td class="right">2 (%)</td>
+            <td class="right">1 (%)</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">900.10%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[오전 10시|30분 딜레이] 장바구니 이...</td>
+            <td class="right">0</td>
+            <td class="right">2 (%)</td>
+            <td class="right">2 (%)</td>
+            <td class="right">0원</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">900.10%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[오전 10시|30분 딜레이] 장바구니 이...</td>
+            <td class="right">0</td>
+            <td class="right">2 (%)</td>
+            <td class="right">2 (%)</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">900.10%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[오전 10시|30분 딜레이] 장바구니 이...</td>
+            <td class="right">0</td>
+            <td class="right">1 (%)</td>
+            <td class="right">1 (%)</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">123/123/123원</td>
+            <td class="right">900.10%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td class="name">[오전 10시|30분 딜레이] 장바구니 이...</td>
+            <td class="right">0</td>
+            <td class="right">0</td>
+            <td class="right">0</td>
+            <td class="right">0원</td>
+            <td class="right">0원</td>
+            <td class="right">0%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <div class="pagination-info">총 21개의 목록</div>
+        <div class="pagination-controls">
+          목록 <select class="filter-select" style="min-width:60px;padding:4px 8px;">
+            <option>20</option>
+          </select>
+          페이지
+          <button class="pagination-btn">&lt;</button>
+          <span>1</span> / <span>2</span>
+          <button class="pagination-btn">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
