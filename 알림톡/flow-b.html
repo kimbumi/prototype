@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>알림톡 UX 플로우</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: #fff; color: #222; font-size: 13px; }
+
+  /* Layout */
+  .app { display: flex; height: 100vh; }
+  .app-bar { width: 56px; background: #f5f5f5; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; flex-shrink: 0; }
+  .app-icon { width: 36px; height: 36px; background: #ddd; border-radius: 8px; cursor: pointer; }
+  .app-icon.active { background: #bbb; }
+
+  .menu-bar { width: 200px; border-right: 1px solid #eee; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .menu-section { padding: 8px 12px; }
+  .menu-section + .menu-section { border-top: 1px solid #eee; }
+  .menu-group-title { font-size: 14px; font-weight: 700; color: #222; padding: 12px 12px 8px; }
+  .menu-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #666; margin-bottom: 2px; display: flex; align-items: center; }
+  .menu-item::before { content: '·'; margin-right: 8px; color: #ccc; }
+  .menu-item:hover { background: #f5f5f5; }
+  .menu-item.active { background: #EDE9FE; color: #7C3AED; font-weight: 600; }
+  .menu-item.active::before { color: #7C3AED; }
+  .menu-bottom { margin-top: auto; padding: 16px; border-top: 1px solid #eee; }
+  .menu-bottom-user { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .menu-bottom-points { font-size: 16px; font-weight: 700; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 32px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+  .page-title { font-size: 18px; font-weight: 700; }
+  .page-content { flex: 1; overflow-y: auto; padding: 24px 32px; }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-family: inherit; }
+  .btn-primary { background: #222; color: #fff; }
+  .btn-secondary { background: #f5f5f5; color: #222; border: 1px solid #ddd; }
+
+  /* Segments */
+  .segment-bar { display: flex; gap: 4px; margin-bottom: 20px; }
+  .segment-item { display: inline-block; padding: 6px 14px; border-radius: 16px; border: 1px solid #ddd; cursor: pointer; font-size: 12px; background: #fff; white-space: nowrap; }
+  .segment-item.active { background: #222; color: #fff; border-color: #222; }
+
+  /* Preset banner */
+  .preset-banner { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 16px; margin-bottom: 20px; position: relative; }
+  .preset-banner-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .preset-banner-title { font-size: 13px; font-weight: 600; }
+  .preset-banner-close { font-size: 16px; color: #ccc; cursor: pointer; border: none; background: none; padding: 0; }
+  .preset-banner-close:hover { color: #666; }
+  .preset-cards { display: flex; gap: 10px; }
+  .preset-card { flex: 1; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 16px 12px; cursor: pointer; text-align: center; }
+  .preset-card:hover { border-color: #222; }
+  .preset-card-thumb { width: 100%; height: 60px; background: #eee; border-radius: 4px; margin-bottom: 8px; }
+  .preset-card-name { font-size: 12px; font-weight: 500; }
+  .preset-more { font-size: 11px; color: #666; text-align: right; margin-top: 10px; cursor: pointer; }
+  .preset-more:hover { color: #222; }
+
+  /* Preset inline list */
+  .preset-inline { background: #F8F7FF; border-radius: 12px; margin-bottom: 24px; padding: 20px; }
+  .preset-inline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .preset-inline-title { font-size: 14px; font-weight: 700; color: #222; }
+  .preset-inline-subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+  .preset-inline-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; background: #fff; border-radius: 8px; margin-bottom: 6px; border: 1px solid transparent; }
+  .preset-inline-item:hover { border-color: #D4D0F0; }
+  .preset-inline-name { font-size: 13px; font-weight: 600; min-width: 140px; }
+  .preset-inline-desc { font-size: 12px; color: #999; flex: 1; }
+  .preset-inline-more { font-size: 12px; color: #7C6ED4; cursor: pointer; font-weight: 500; }
+  .preset-inline-more:hover { color: #5B4CB8; }
+
+  /* Preset text cards */
+  .preset-text-card { flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; }
+  .preset-text-card:hover { border-color: #222; }
+  .preset-text-card-cat { display: none; }
+  .preset-text-card-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .preset-text-card-rank { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 8px; }
+  .preset-text-card-desc { font-size: 11px; color: #999; line-height: 1.4; }
+  .preset-text-card-stat { font-size: 11px; color: #999; margin-top: 10px; }
+
+  /* Preset list items */
+  .preset-list-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid #eee; border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px; }
+  .preset-list-item:hover { border-color: #999; }
+  .preset-list-item.selected { border-color: #222; background: #fafafa; }
+  .preset-list-cat { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; flex-shrink: 0; }
+  .cat-ops { background: #E8F5E9; color: #2E7D32; }
+  .cat-mkt { background: #FFF3E0; color: #E65100; }
+
+  /* Preset group */
+  .preset-group-title { font-size: 12px; font-weight: 700; color: #222; margin-top: 24px; margin-bottom: 8px; }
+  .preset-group-title:first-child { margin-top: 0; }
+  .preset-list-icon { width: 36px; height: 36px; background: #f0f0f0; border-radius: 8px; flex-shrink: 0; }
+  .preset-list-text { flex: 1; }
+  .preset-list-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .preset-list-desc { font-size: 11px; color: #999; }
+
+  /* Campaign list */
+  .campaign-table { width: 100%; border-collapse: collapse; }
+  .campaign-table th { text-align: left; font-size: 11px; color: #999; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #eee; }
+  .campaign-table td { padding: 14px 12px; border-bottom: 1px solid #f5f5f5; font-size: 13px; cursor: pointer; }
+  .campaign-table tr:hover td { background: #fafafa; }
+  .channel-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #f0f0f0; color: #666; margin-right: 8px; }
+  .channel-badge.alimtalk { background: #FEE500; color: #222; }
+  .channel-badge.friendtalk { background: #E8EAFF; color: #4A50C7; }
+  .channel-badge.sms { background: #E8F5E9; color: #2E7D32; }
+  .status { font-size: 11px; }
+  .status.active { color: #22c55e; }
+  .status.inactive { color: #999; }
+  .tag { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: #f0f0f0; color: #999; }
+  .tag.preset { background: #f0e8ff; color: #7c3aed; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 80px 20px; color: #999; }
+  .empty-state p { margin-bottom: 16px; }
+
+  /* Modal / Overlay */
+  .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+  .overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 560px; max-height: 80vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #eee; }
+  .modal-header h3 { font-size: 16px; }
+  .modal-close { font-size: 20px; color: #999; cursor: pointer; border: none; background: none; }
+  .modal-body { padding: 24px; }
+
+  /* Full screen flow */
+  .flow-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; z-index: 200; flex-direction: column; }
+  .flow-screen.show { display: flex; }
+  .flow-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #eee; }
+  .flow-header h3 { font-size: 15px; }
+  .flow-body { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 40px; }
+  .flow-content { width: 480px; }
+  .flow-footer { padding: 16px 24px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Flow items */
+  .flow-option { padding: 16px; border: 1px solid #eee; border-radius: 8px; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+  .flow-option:hover { border-color: #222; background: #fafafa; }
+  .flow-option.selected { border-color: #222; background: #f5f5f5; }
+  .flow-option-icon { width: 40px; height: 40px; background: #eee; border-radius: 8px; flex-shrink: 0; }
+  .flow-option-icon.alimtalk { background: #FEE500; }
+  .flow-option-text { flex: 1; }
+  .flow-option-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .flow-option-desc { font-size: 11px; color: #999; }
+
+  /* Template list */
+  .template-group-label { font-size: 11px; color: #999; font-weight: 600; margin-bottom: 8px; margin-top: 20px; }
+  .template-group-label:first-child { margin-top: 0; }
+  .template-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 6px; cursor: pointer; }
+  .template-item:hover { border-color: #222; }
+  .template-item.disabled { opacity: 0.5; cursor: not-allowed; }
+  .template-item.disabled:hover { border-color: #eee; }
+  .template-status { font-size: 10px; }
+  .template-status.approved { color: #22c55e; }
+  .template-status.pending { color: #f59e0b; }
+  .template-status.rejected { color: #ef4444; }
+  .template-add { display: flex; justify-content: center; padding: 12px; border: 1px dashed #ccc; border-radius: 6px; margin-top: 8px; cursor: pointer; color: #999; font-size: 12px; }
+  .template-add:hover { border-color: #222; color: #222; }
+
+  /* Steps indicator */
+  .steps { display: flex; gap: 8px; margin-bottom: 24px; }
+  .step { font-size: 11px; color: #ccc; }
+  .step.active { color: #222; font-weight: 600; }
+  .step.done { color: #22c55e; }
+
+  /* Settings form */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 11px; color: #999; margin-bottom: 6px; }
+  .form-input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; }
+  .form-input.readonly { background: #fafafa; color: #666; }
+  .form-preview { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .form-preview-label { font-size: 11px; color: #999; margin-bottom: 8px; }
+  .form-preview-box { width: 100%; height: 200px; background: #eee; border-radius: 6px; }
+
+  /* Side panel */
+  .side-panel { position: fixed; top: 0; right: -400px; width: 400px; height: 100vh; background: #fff; border-left: 1px solid #eee; box-shadow: -4px 0 20px rgba(0,0,0,0.08); z-index: 300; display: flex; flex-direction: column; transition: right 0.2s ease; }
+  .side-panel.show { right: 0; }
+  .side-panel-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #eee; }
+  .side-panel-header h3 { font-size: 15px; }
+  .side-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .side-panel-footer { padding: 16px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; }
+
+  .channel-select { display: flex; gap: 8px; margin-bottom: 16px; }
+  .channel-option { flex: 1; padding: 10px; border: 1px solid #eee; border-radius: 8px; text-align: center; cursor: pointer; font-size: 12px; }
+  .channel-option:hover { border-color: #222; }
+  .channel-option.selected { border-color: #222; background: #f5f5f5; font-weight: 600; }
+
+  /* Step cards */
+  .sc { background: #fff; border: 1px solid #eee; border-radius: 12px; width: 1000px; max-width: 100%; overflow: hidden; }
+  .sc-header { padding: 18px 20px; border-bottom: 1px solid #f0f0f0; }
+  .sc-badge { width: 22px; height: 22px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #999; flex-shrink: 0; }
+  .sc-badge.active { background: #222; color: #fff; }
+  .sc-title { font-size: 14px; font-weight: 700; }
+  .sc-body { padding: 18px 52px; }
+  .sc-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; background: #fff; cursor: pointer; }
+  .sc-channel-option { padding: 12px 20px; border: 1px solid #eee; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .sc-channel-option:hover { border-color: #222; }
+  .sc-channel-option.selected { border-color: #222; background: #f5f5f5; font-weight: 700; }
+  .sc-channel-radio { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid #eee; border-radius: 8px; cursor: pointer; }
+  .sc-channel-radio:hover { border-color: #999; }
+  .sc-channel-radio.selected { border-color: #222; }
+  .sc-radio-dot { width: 16px; height: 16px; border: 2px solid #ccc; border-radius: 50%; flex-shrink: 0; margin-top: 2px; position: relative; }
+  .sc-channel-radio.selected .sc-radio-dot { border-color: #222; }
+  .sc-channel-radio.selected .sc-radio-dot::after { content: ''; position: absolute; top: 3px; left: 3px; width: 6px; height: 6px; background: #222; border-radius: 50%; }
+  .sc-channel-warn { display: none; font-size: 11px; color: #DC6803; margin-top: 6px; padding: 6px 10px; background: #FFF8EB; border-radius: 4px; }
+  .sc-channel-radio.selected .sc-channel-warn { display: block; }
+  .sc-warn-link { color: #DC6803; font-weight: 600; text-decoration: underline; cursor: pointer; margin-left: 4px; }
+
+  /* Onetime channel chips */
+  .ot-channel-chip { padding: 6px 14px; border: 1px solid #ddd; border-radius: 16px; font-size: 12px; cursor: pointer; }
+  .ot-channel-chip:hover { border-color: #999; }
+  .ot-channel-chip.selected { background: #222; color: #fff; border-color: #222; }
+
+  /* Breadcrumb */
+  .breadcrumb { font-size: 11px; color: #999; margin-bottom: 4px; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ===== MAIN APP ===== -->
+<div class="app" id="app">
+  <!-- App bar -->
+  <div class="app-bar">
+    <div class="app-icon"></div>
+    <div class="app-icon"></div>
+    <div class="app-icon active"></div>
+    <div class="app-icon"></div>
+    <div class="app-icon"></div>
+  </div>
+
+  <!-- Menu bar -->
+  <div class="menu-bar">
+    <div class="menu-section">
+      <div class="menu-group-title">자동화 캠페인</div>
+      <div class="menu-item active" id="menu-auto-list" onclick="navigate('auto-list')">캠페인 목록</div>
+      <div class="menu-item" id="menu-auto-analytics" onclick="navigate('auto-analytics')">통계</div>
+    </div>
+    <div class="menu-section">
+      <div class="menu-group-title">일회성 캠페인</div>
+      <div class="menu-item" id="menu-onetime-list" onclick="navigate('onetime-list')">캠페인 목록</div>
+    </div>
+    <div class="menu-section">
+      <div class="menu-group-title">알림 메시지</div>
+      <div class="menu-item" id="menu-alimtalk" onclick="navigate('alimtalk')">알림 관리</div>
+      <div class="menu-item" id="menu-alimtalk-stats" onclick="navigate('alimtalk-stats')">통계</div>
+    </div>
+    <div class="menu-bottom">
+      <div class="menu-bottom-user">안녕하세요, 알파푸시 님</div>
+      <div class="menu-bottom-points">5,000원</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="page-header">
+      <div>
+        <div class="breadcrumb" id="breadcrumb">메시지 캠페인 > 자동화</div>
+        <div class="page-title" id="pageTitle">캠페인 목록</div>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateForCurrentPage()">+ 새 캠페인</button>
+    </div>
+
+    <!-- 자동화 캠페인 목록 -->
+    <div class="page-content" id="page-auto-list">
+      <div class="segment-bar">
+        <div class="segment-item active">전체</div>
+        <div class="segment-item">친구톡</div>
+        <div class="segment-item">문자</div>
+      </div>
+
+      <div id="presetBanner" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 14px; font-weight: 700;">추천 프리셋</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="preset-inline-more" onclick="openCreateModal()">전체 보기</span>
+            <button class="preset-banner-close" onclick="closePresetBanner()">✕</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div class="preset-text-card" onclick="openPresetFlow('장바구니 리마인드')">
+            <div class="preset-text-card-rank">Top 1</div>
+            <div class="preset-text-card-name">장바구니 리마인드</div>
+            <div class="preset-text-card-stat">전환율 4.2%</div>
+          </div>
+          <div class="preset-text-card" onclick="openPresetFlow('쿠폰 만료 알림')">
+            <div class="preset-text-card-rank">Top 2</div>
+            <div class="preset-text-card-name">쿠폰 만료 알림</div>
+            <div class="preset-text-card-stat">전환율 3.8%</div>
+          </div>
+          <div class="preset-text-card" onclick="openPresetFlow('재구매 유도')">
+            <div class="preset-text-card-rank">Top 3</div>
+            <div class="preset-text-card-name">재구매 유도</div>
+            <div class="preset-text-card-stat">전환율 3.5%</div>
+          </div>
+        </div>
+      </div>
+
+      <table class="campaign-table">
+        <thead>
+          <tr>
+            <th style="width:40%">캠페인</th>
+            <th>채널</th>
+            <th>유형</th>
+            <th>상태</th>
+            <th>발송 수</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="openCampaignDetail('[프리셋] 장바구니 구매 유도 캠페인', 'friendtalk')">
+            <td>장바구니 리마인드</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td><span class="tag">커스텀</span></td>
+            <td><span class="status active">● 활성</span></td>
+            <td>12,340</td>
+          </tr>
+          <tr>
+            <td>첫구매 유도 캠페인</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td><span class="tag">커스텀</span></td>
+            <td><span class="status inactive">비활성</span></td>
+            <td>—</td>
+          </tr>
+          <tr onclick="openCampaignDetail('재구매 유도 캠페인', 'friendtalk')">
+            <td>재구매 유도 캠페인</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td><span class="tag preset">프리셋</span></td>
+            <td><span class="status active">● 활성</span></td>
+            <td>5,102</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 자동화 통계 -->
+    <div class="page-content hidden" id="page-auto-analytics">
+
+      <!-- 채널 탭 -->
+      <div class="segment-bar" style="margin-bottom: 20px;">
+        <div class="segment-item active" onclick="switchAnalyticsTab(this, 'all')">전체</div>
+        <div class="segment-item" onclick="switchAnalyticsTab(this, 'friendtalk')">친구톡</div>
+        <div class="segment-item" onclick="switchAnalyticsTab(this, 'sms')">문자</div>
+      </div>
+
+      <!-- 상단 KPI: 전체/친구톡/문자 -->
+      <div id="analyticsKpiFull">
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">발송 비용</div>
+            <div style="font-size: 20px; font-weight: 700;" id="analyticsKpiCost">100,223,344원</div>
+          </div>
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">전환 금액</div>
+            <div style="font-size: 20px; font-weight: 700;" id="analyticsKpiRevenue">100,223,344원</div>
+          </div>
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">ROAS</div>
+            <div style="font-size: 20px; font-weight: 700;" id="analyticsKpiRoas">700.5%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상단 KPI: 알림톡 (클릭/전환 없음) -->
+      <div id="analyticsKpiAlimtalk" style="display: none;">
+        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">수신 성공</div>
+            <div style="font-size: 20px; font-weight: 700;">1,240명</div>
+          </div>
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">발송 비용</div>
+            <div style="font-size: 20px; font-weight: 700;">152,300원</div>
+          </div>
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px; background: #fafafa;">
+            <div style="font-size: 11px; color: #ccc; margin-bottom: 6px;">전환 금액</div>
+            <div style="font-size: 20px; font-weight: 700; color: #ccc;">—</div>
+          </div>
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px; background: #fafafa;">
+            <div style="font-size: 11px; color: #ccc; margin-bottom: 6px;">ROAS</div>
+            <div style="font-size: 20px; font-weight: 700; color: #ccc;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #666;">분석 기간</span>
+          <select class="sc-select" style="font-size: 12px;">
+            <option>최근 30일</option>
+            <option>최근 7일</option>
+            <option>최근 90일</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #666;">지표 선택</span>
+          <select class="sc-select" style="font-size: 12px;" id="analyticsMetricSelect">
+            <option value="cvr">전환율</option>
+            <option value="ctr">클릭률</option>
+            <option value="sent">발송수</option>
+            <option value="received">수신 성공</option>
+          </select>
+          <select class="sc-select" style="font-size: 12px; display: none;" id="analyticsMetricSelectAlimtalk">
+            <option>발송수</option>
+            <option>수신 성공</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 차트 영역 -->
+      <div style="border: 1px solid #eee; border-radius: 10px; padding: 24px; margin-bottom: 24px; height: 220px; display: flex; align-items: flex-end; gap: 4px;">
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 45%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 55%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 70%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 90%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 65%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 80%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 50%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 60%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 75%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 85%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 40%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 55%;"></div>
+      </div>
+
+      <!-- 캠페인 목록 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 14px; font-weight: 700;">캠페인 목록</span>
+        <span style="font-size: 11px; color: #999;" id="analyticsListCount">총 8개의 캠페인</span>
+      </div>
+
+      <!-- 전체/친구톡/문자 테이블 -->
+      <table class="campaign-table" id="analyticsTableFull">
+        <thead>
+          <tr>
+            <th></th>
+            <th>캠페인</th>
+            <th>채널</th>
+            <th>수신 성공</th>
+            <th>클릭 수</th>
+            <th>클릭률</th>
+            <th>구매 전환</th>
+            <th>전환율</th>
+            <th>발송 비용</th>
+            <th>ROAS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" checked></td>
+            <td>장바구니 구매 유도</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td>1,200</td>
+            <td>180</td>
+            <td>15.0%</td>
+            <td>42</td>
+            <td>3.5%</td>
+            <td>14,400원</td>
+            <td>2,100%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" checked></td>
+            <td>첫구매 유도</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td>890</td>
+            <td>95</td>
+            <td>10.7%</td>
+            <td>28</td>
+            <td>3.1%</td>
+            <td>10,680원</td>
+            <td>1,800%</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" checked></td>
+            <td>재구매 유도</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td>2,300</td>
+            <td>310</td>
+            <td>13.5%</td>
+            <td>55</td>
+            <td>2.4%</td>
+            <td>27,600원</td>
+            <td>900%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 알림톡 전용 테이블 -->
+      <table class="campaign-table" id="analyticsTableAlimtalk" style="display: none;">
+        <thead>
+          <tr>
+            <th></th>
+            <th>캠페인</th>
+            <th>수신 성공</th>
+            <th>발송 비용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" checked></td>
+            <td>회원가입 환영</td>
+            <td>560</td>
+            <td>6,720원</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" checked></td>
+            <td>배송완료 안내</td>
+            <td>340</td>
+            <td>4,080원</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td>카카오 채널 추가 유도</td>
+            <td>780</td>
+            <td>9,360원</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 알림톡 관리 (B안) -->
+    <div class="page-content hidden" id="page-alimtalk">
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 13px; color: #888; margin-bottom: 8px;">고객 여정에 맞는 알림톡을 활성화하세요. 활성화하면 자동으로 발송됩니다.</div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">회원가입</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">회원가입 환영</div>
+              <div style="font-size: 11px; color: #999;">회원가입 완료 시 환영 메시지 발송</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #999;">수신 99명 · 6,720원</span>
+              <div style="width: 40px; height: 22px; background: #22c55e; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; right: 2px;"></div></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">카카오 채널 추가 유도</div>
+              <div style="font-size: 11px; color: #999;">회원가입 후 카카오 채널 친구 추가 안내</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #999;">수신 780명 · 9,360원</span>
+              <div style="width: 40px; height: 22px; background: #22c55e; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; right: 2px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">주문/결제</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">신규 주문 안내</div>
+              <div style="font-size: 11px; color: #999;">주문 접수 완료 시 메시지 발송</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #ccc;">미활성</span>
+              <div style="width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px;"></div></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">입금 안내</div>
+              <div style="font-size: 11px; color: #999;">무통장 입금, 가상계좌 주문 시 안내</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #ccc;">미활성</span>
+              <div style="width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px;"></div></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">결제 완료</div>
+              <div style="font-size: 11px; color: #999;">결제 완료 확인 메시지 발송</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #ccc;">미활성</span>
+              <div style="width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">배송</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">배송 시작</div>
+              <div style="font-size: 11px; color: #999;">배송 시작 시 운송장 정보와 함께 안내</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #999;">수신 340명 · 4,080원</span>
+              <div style="width: 40px; height: 22px; background: #22c55e; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; right: 2px;"></div></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">배송 완료</div>
+              <div style="font-size: 11px; color: #999;">배송 완료 시 확인 메시지 발송</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #ccc;">미활성</span>
+              <div style="width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">CS</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">취소 접수 안내</div>
+              <div style="font-size: 11px; color: #999;">주문 취소 접수 시 안내 메시지 발송</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #ccc;">미활성</span>
+              <div style="width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px;"></div></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 2px;">반품/교환 안내</div>
+              <div style="font-size: 11px; color: #999;">반품 또는 교환 접수 시 안내</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; color: #ccc;">미활성</span>
+              <div style="width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer;"><div style="width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 알림 메시지 통계 (B안) -->
+    <div class="page-content hidden" id="page-alimtalk-stats">
+      <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+        <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <div style="font-size: 11px; color: #999; margin-bottom: 6px;">수신 성공</div>
+          <div style="font-size: 20px; font-weight: 700;">1,240명</div>
+        </div>
+        <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <div style="font-size: 11px; color: #999; margin-bottom: 6px;">발송 비용</div>
+          <div style="font-size: 20px; font-weight: 700;">152,300원</div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #666;">분석 기간</span>
+          <select class="sc-select" style="font-size: 12px;">
+            <option>최근 30일</option>
+            <option>최근 7일</option>
+            <option>최근 90일</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 12px; color: #666;">지표</span>
+          <select class="sc-select" style="font-size: 12px;">
+            <option>발송수</option>
+            <option>수신 성공</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #eee; border-radius: 10px; padding: 24px; margin-bottom: 24px; height: 200px; display: flex; align-items: flex-end; gap: 4px;">
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 50%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 65%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 80%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 55%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 70%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 90%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 45%;"></div>
+        <div style="flex: 1; background: #eee; border-radius: 3px 3px 0 0; height: 60%;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 14px; font-weight: 700;">알림별 통계</span>
+      </div>
+      <table class="campaign-table">
+        <thead>
+          <tr>
+            <th>알림</th>
+            <th>수신 성공</th>
+            <th>발송 비용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>회원가입 환영</td><td>560</td><td>6,720원</td></tr>
+          <tr><td>카카오 채널 추가 유도</td><td>780</td><td>9,360원</td></tr>
+          <tr><td>배송 시작</td><td>340</td><td>4,080원</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 일회성 캠페인 목록 -->
+    <div class="page-content hidden" id="page-onetime-list">
+      <div class="segment-bar">
+        <div class="segment-item active">전체</div>
+        <div class="segment-item">친구톡</div>
+        <div class="segment-item">알림톡</div>
+        <div class="segment-item">문자</div>
+      </div>
+
+      <div id="onetimePresetBanner" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 14px; font-weight: 700;">추천 프리셋</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="preset-inline-more" onclick="openCreateModal()">전체 보기</span>
+            <button class="preset-banner-close" onclick="document.getElementById('onetimePresetBanner').style.display='none'">✕</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div class="preset-text-card" onclick="openPresetFlow('시즌 특별 이벤트')">
+            <div class="preset-text-card-rank">Top 1</div>
+            <div class="preset-text-card-name">시즌 특별 이벤트</div>
+            <div class="preset-text-card-stat">전환율 4.8%</div>
+          </div>
+          <div class="preset-text-card" onclick="openPresetFlow('신상품 출시 홍보')">
+            <div class="preset-text-card-rank">Top 2</div>
+            <div class="preset-text-card-name">신상품 출시 홍보</div>
+            <div class="preset-text-card-stat">전환율 3.9%</div>
+          </div>
+          <div class="preset-text-card" onclick="openPresetFlow('타임 세일 프로모션')">
+            <div class="preset-text-card-rank">Top 3</div>
+            <div class="preset-text-card-name">타임 세일 프로모션</div>
+            <div class="preset-text-card-stat">전환율 3.5%</div>
+          </div>
+        </div>
+      </div>
+
+      <table class="campaign-table">
+        <thead>
+          <tr>
+            <th style="width:40%">캠페인</th>
+            <th>채널</th>
+            <th>유형</th>
+            <th>상태</th>
+            <th>발송 수</th>
+          </tr>
+        </thead>
+        <tbody id="onetimeTableBody">
+          <tr>
+            <td>3월 프로모션 안내</td>
+            <td><span class="channel-badge friendtalk">친구톡</span></td>
+            <td><span class="tag">커스텀</span></td>
+            <td><span class="status">발송완료</span></td>
+            <td>3,200</td>
+          </tr>
+          <tr>
+            <td>VIP 쿠폰 안내</td>
+            <td><span class="channel-badge alimtalk">알림톡</span></td>
+            <td><span class="tag preset">프리셋</span></td>
+            <td><span class="status" style="color:#2563eb;">발송예약</span></td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== CREATE MODAL (hidden, kept for reference) ===== -->
+<div class="overlay" id="createModal" style="display:none;"></div>
+
+<!-- ===== PRESET BROWSE FULL SCREEN ===== -->
+<div class="flow-screen" id="flow-presetBrowse">
+  <div style="border-bottom: 1px solid #eee; padding: 16px 32px;">
+    <div style="max-width: 800px; margin: 0 auto;">
+      <div style="font-size: 12px; color: #999; cursor: pointer; margin-bottom: 4px;" onclick="closeFlow()">← 캠페인 목록</div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-size: 18px;">새 캠페인 만들기</h3>
+        <button class="btn btn-secondary" onclick="closeFlow(); if(currentPage==='onetime-list'){startOnetimeCustomFlow();}else{startCustomFlow();}">직접 만들기 →</button>
+      </div>
+    </div>
+  </div>
+  <div style="border-bottom: 1px solid #eee; padding: 16px 32px;">
+    <div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+      <div style="display: none;" id="presetFilterTabs">
+        <div class="segment-item active preset-filter" style="font-size: 11px; padding: 4px 12px;" onclick="filterPresets('all', this)">전체</div>
+        <div class="segment-item preset-filter" style="font-size: 11px; padding: 4px 12px;" onclick="filterPresets('ops', this)">운영</div>
+        <div class="segment-item preset-filter" style="font-size: 11px; padding: 4px 12px;" onclick="filterPresets('mkt', this)">마케팅</div>
+      </div>
+      <input class="form-input" style="width: 240px; padding: 8px 12px; font-size: 12px;" placeholder="프리셋 검색" oninput="searchPresets(this.value)">
+    </div>
+  </div>
+  <!-- 일회성 프리셋 목록 -->
+  <div style="flex: 1; overflow-y: auto; padding: 32px; display: none;" id="presetListAreaOnetime">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="preset-group-title">프로모션</div>
+        <div class="preset-list-item" data-type="mkt" data-group="프로모션" onclick="openPresetFlow('특정 상품 구매 고객 프로모션')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">특정 상품 구매 고객 프로모션</div>
+            <div class="preset-list-desc">특정 상품 구매자 대상 맞춤 프로모션</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="프로모션" onclick="openPresetFlow('VIP 고객 전용 혜택')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">VIP 고객 전용 혜택</div>
+            <div class="preset-list-desc">VIP 등급 고객에게 특별 혜택 안내</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="프로모션" onclick="openPresetFlow('재구매 유도 프로모션')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">재구매 유도 프로모션</div>
+            <div class="preset-list-desc">미구매 고객 대상 할인 프로모션</div>
+          </div>
+        </div>
+
+        <div class="preset-group-title">신상품/이벤트</div>
+        <div class="preset-list-item" data-type="mkt" data-group="신상품/이벤트" onclick="openPresetFlow('신상품 출시 홍보')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">신상품 출시 홍보</div>
+            <div class="preset-list-desc">신상품 출시 소식 안내</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="신상품/이벤트" onclick="openPresetFlow('시즌 특별 이벤트')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">시즌 특별 이벤트</div>
+            <div class="preset-list-desc">명절, 시즌 맞이 특별 이벤트 안내</div>
+          </div>
+        </div>
+
+        <div class="preset-group-title">타임세일</div>
+        <div class="preset-list-item" data-type="mkt" data-group="타임세일" onclick="openPresetFlow('타임 세일 프로모션')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">타임 세일 프로모션</div>
+            <div class="preset-list-desc">한정 시간 할인 이벤트 안내</div>
+          </div>
+        </div>
+
+        <div class="preset-group-title">쿠폰/적립금</div>
+        <div class="preset-list-item" data-type="mkt" data-group="쿠폰/적립금" onclick="openPresetFlow('쿠폰 만료 안내')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">쿠폰 만료 안내</div>
+            <div class="preset-list-desc">보유 쿠폰 만료 전 리마인드</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="쿠폰/적립금" onclick="openPresetFlow('적립금 사용 유도')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">적립금 사용 유도</div>
+            <div class="preset-list-desc">미사용 적립금 활용 안내</div>
+          </div>
+        </div>
+
+        <div class="preset-group-title">소식/안내</div>
+        <div class="preset-list-item" data-type="ops" data-group="소식/안내" onclick="openPresetFlow('브랜드 소식 안내')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">브랜드 소식 안내</div>
+            <div class="preset-list-desc">브랜드 뉴스, 업데이트 안내</div>
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- 자동화 프리셋 목록 -->
+  <div style="flex: 1; overflow-y: auto; padding: 32px;" id="presetListArea">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div class="preset-group-title" data-group="장바구니">장바구니</div>
+        <div class="preset-list-item" data-type="mkt" data-group="장바구니" onclick="openPresetFlow('장바구니 리마인드')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">장바구니 리마인드</div>
+            <div class="preset-list-desc">장바구니에 담고 이탈한 고객에게 리마인드</div>
+          </div>
+        </div>
+
+        <div class="preset-group-title" data-group="첫구매">첫구매</div>
+        <div class="preset-list-item" data-type="mkt" data-group="첫구매" onclick="openPresetFlow('첫구매 유도')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">첫구매 유도</div>
+            <div class="preset-list-desc">가입 후 구매 이력 없는 고객에게 구매 유도</div>
+          </div>
+        </div>
+
+        <div class="preset-group-title" data-group="구매 후">구매 후</div>
+        <div class="preset-list-item" data-type="mkt" data-group="구매 후" onclick="openPresetFlow('리뷰 작성 요청')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">리뷰 작성 요청</div>
+            <div class="preset-list-desc">구매 후 리뷰 작성 유도</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="구매 후" onclick="openPresetFlow('쿠폰 만료 알림')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">쿠폰 만료 알림</div>
+            <div class="preset-list-desc">보유 쿠폰 만료 전 리마인드</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="구매 후" onclick="openPresetFlow('적립금 보유 안내')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">적립금 보유 안내</div>
+            <div class="preset-list-desc">미사용 적립금 보유 알림</div>
+          </div>
+        </div>
+        <div class="preset-list-item" data-type="mkt" data-group="구매 후" onclick="openPresetFlow('재구매 유도')">
+          <div class="preset-list-icon"></div>
+          <div class="preset-list-text">
+            <div class="preset-list-name">재구매 유도</div>
+            <div class="preset-list-desc">일정 기간 미구매 고객에게 재구매 유도</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== CAMPAIGN DETAIL ===== -->
+<div class="flow-screen" id="flow-campaign-detail">
+  <div style="background: #fff; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid #eee; flex-shrink: 0;">
+    <button style="border: none; background: none; font-size: 18px; color: #999; cursor: pointer;" onclick="closeFlow()">✕</button>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 10px; padding: 2px 8px; background: #22c55e; color: #fff; border-radius: 10px;">활성 중</span>
+      <span style="font-size: 15px; font-weight: 600;" id="detailCampaignName">[프리셋] 회원가입 환영 메시지</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary">캠페인 비활성화</button>
+      <span style="font-size: 16px; color: #999; cursor: pointer;">⋮</span>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; padding: 32px 24px 120px;">
+    <div style="max-width: 960px; margin: 0 auto;">
+
+      <!-- 캠페인 통계 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 700;">캠페인 통계</h3>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999;">
+          <span>최근 14일</span>
+        </div>
+      </div>
+
+      <!-- 탭 -->
+      <div style="display: flex; gap: 16px; border-bottom: 1px solid #eee; margin-bottom: 20px;">
+        <span style="font-size: 13px; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid #222;">캠페인 요약</span>
+        <span style="font-size: 13px; color: #999; padding-bottom: 10px; cursor: pointer;">발송 목록</span>
+      </div>
+
+      <!-- 안내 배너 (알림톡용) -->
+      <div id="detailAlimtalkNotice" style="background: #FFF8EB; border: 1px solid #FEE500; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 12px; color: #666;">ⓘ 이 캠페인은 클릭 수와 목표 달성률 통계를 제공하지 않는 프리셋입니다. 친구 추가 수 증가 추이는 카카오 비즈니스 대시보드에서 확인하실 수 있습니다.</div>
+        <span style="font-size: 12px; color: #2563eb; cursor: pointer; white-space: nowrap; margin-left: 12px;">카카오 비즈니스로 이동</span>
+      </div>
+
+      <!-- KPI: 알림톡 -->
+      <div id="detailKpiAlimtalk">
+        <div style="font-size: 11px; color: #999; text-align: right; margin-bottom: 8px;">마지막 업데이트 2026.03.31 PM 12:23</div>
+        <div style="display: flex; gap: 16px; margin-bottom: 32px;">
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">수신 성공</div>
+            <div style="font-size: 22px; font-weight: 700;">99명</div>
+          </div>
+          <div style="flex: 1; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">발송 비용</div>
+            <div style="font-size: 22px; font-weight: 700;">123,990원</div>
+            <div style="font-size: 11px; color: #999; margin-top: 4px;">99건</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI: 친구톡/문자 -->
+      <div id="detailKpiFriendtalk" style="display: none;">
+        <div style="font-size: 11px; color: #999; text-align: right; margin-bottom: 8px;">마지막 업데이트 2026.03.31 PM 12:23</div>
+        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+          <div style="flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">세그먼트</div>
+            <div style="font-size: 20px; font-weight: 700;">100명</div>
+          </div>
+          <div style="flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">수신 성공</div>
+            <div style="font-size: 20px; font-weight: 700;">100명</div>
+          </div>
+          <div style="flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">클릭</div>
+            <div style="font-size: 20px; font-weight: 700;">1명 <span style="font-size: 12px; color: #999;">(1%)</span></div>
+          </div>
+          <div style="flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">구매 전환</div>
+            <div style="font-size: 20px; font-weight: 700;">1명 <span style="font-size: 12px; color: #999;">(1%)</span></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-bottom: 32px;">
+          <div style="flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">발송 비용</div>
+            <div style="font-size: 20px; font-weight: 700;">1,190원</div>
+            <div style="font-size: 11px; color: #999; margin-top: 4px;">친구톡 4건 / 대체문자 6건</div>
+          </div>
+          <div style="flex: 1; padding: 16px; border: 1px solid #eee; border-radius: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">전환 금액</div>
+            <div style="font-size: 20px; font-weight: 700;">23,000원</div>
+            <div style="font-size: 11px; color: #999; margin-top: 4px;">ROAS 2,300%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 캠페인 내용 -->
+      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">캠페인 내용</h3>
+
+      <!-- 메시지 -->
+      <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px;">💬</span>
+          <span style="font-size: 13px; font-weight: 600;">메세지</span>
+        </div>
+        <div style="padding: 24px; display: flex; justify-content: center;">
+          <div style="width: 300px;">
+            <div style="font-size: 11px; color: #999; text-align: center; margin-bottom: 8px;">알림톡</div>
+            <div style="background: #fff; border-radius: 12px; border: 1px solid #eee; overflow: hidden;">
+              <div style="background: #FEE500; padding: 8px 12px; font-size: 11px; font-weight: 600;">알림톡 도착</div>
+              <div style="padding: 14px;">
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 4px;">환영합니다</div>
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 12px;">채널 추가하고<br>혜택 챙겨가세요</div>
+                <div style="width: 100%; height: 80px; background: #eee; border-radius: 6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 11px;">이미지</div>
+                <div style="font-size: 11px; color: #888; line-height: 1.6; margin-bottom: 12px;">
+                  {쇼핑몰명}에 가입해주셔서 감사합니다🎉<br>
+                  아직 {고객명}님에게 드릴수 있는 선물이 남아있어요<br><br>
+                  지금 채널을 추가하시면 아래 혜택을 받을 수 있어요.
+                </div>
+                <div style="padding: 10px; background: #FEE500; border-radius: 6px; text-align: center; font-size: 12px; font-weight: 600;">🔔 채널 추가</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 발송 -->
+      <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+          <span style="font-size: 14px;">👥</span>
+          <span style="font-size: 13px; font-weight: 600;">발송</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #888;" id="detailSendingFlow">
+          <span>회원 가입 후</span>
+          <span style="color: #ccc;">──────→</span>
+          <span>즉시</span>
+          <span style="color: #ccc;">──────→</span>
+          <span>자동 발송</span>
+        </div>
+      </div>
+
+      <!-- 목표 (친구톡/문자만) -->
+      <div id="detailGoalSection" style="display: none; background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px 20px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+          <span style="font-size: 14px;">🎯</span>
+          <span style="font-size: 13px; font-weight: 600;">목표</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #888;">
+          <span>메세지를 받고</span>
+          <span style="color: #ccc;">──────→</span>
+          <span>7일 이내</span>
+          <span style="color: #ccc;">──────→</span>
+          <span>구매하면 목표 달성</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== ONETIME CHANNEL SELECT ===== -->
+<div class="flow-screen" id="flow-onetime-channel">
+  <div class="flow-header">
+    <div>
+      <div class="steps">
+        <span class="step active">채널 선택</span>
+        <span class="step">→ 메시지 작성</span>
+      </div>
+      <h3>어떤 채널로 보낼까요?</h3>
+    </div>
+    <button class="btn btn-secondary" onclick="closeFlow()">✕ 닫기</button>
+  </div>
+  <div class="flow-body">
+    <div class="flow-content">
+      <div class="flow-option" onclick="enterOnetimeEditor('친구톡')">
+        <div class="flow-option-icon" style="background:#E8EAFF;"></div>
+        <div class="flow-option-text">
+          <div class="flow-option-title">친구톡</div>
+          <div class="flow-option-desc">카카오 채널 친구 추가 대상에게만 발송</div>
+        </div>
+      </div>
+      <div class="flow-option" onclick="enterOnetimeEditor('알림톡')">
+        <div class="flow-option-icon" style="background:#FEE500;"></div>
+        <div class="flow-option-text">
+          <div class="flow-option-title">알림톡</div>
+          <div class="flow-option-desc">검수된 내용의 정보성 메시지 발송</div>
+        </div>
+      </div>
+      <div class="flow-option" onclick="enterOnetimeEditor('문자')">
+        <div class="flow-option-icon" style="background:#E8F5E9;"></div>
+        <div class="flow-option-text">
+          <div class="flow-option-title">문자</div>
+          <div class="flow-option-desc">마케팅 수신 동의한 회원에게 발송</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ONETIME CUSTOM FLOW ===== -->
+<div class="flow-screen" id="flow-onetime-custom">
+  <!-- Header -->
+  <div style="background: #fff; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid #eee; flex-shrink: 0;">
+    <button style="border: none; background: none; font-size: 18px; color: #999; cursor: pointer;" onclick="closeFlow()">✕</button>
+    <span style="font-size: 15px; font-weight: 600;">일회성 캠페인 만들기</span>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary" style="opacity: 0.4;">테스트 발송</button>
+      <button class="btn btn-primary" onclick="saveOnetimeCampaign()">발송 예약</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div style="flex: 1; overflow-y: auto; background: #f5f5f5; padding: 32px 24px 120px;">
+    <div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+
+      <!-- 어떤 메세지를 보낼까요? -->
+      <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+        <div style="padding: 18px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">💬</span>
+            <span style="font-size: 14px; font-weight: 700;">어떤 메세지를 보낼까요?</span>
+          </div>
+          <span style="font-size: 12px; color: #999; cursor: pointer;">템플릿 변경</span>
+        </div>
+        <div style="display: flex; min-height: 480px;">
+          <!-- 좌: 에디터 -->
+          <div style="width: 440px; padding: 24px; border-right: 1px solid #eee; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; flex-shrink: 0;">
+
+            <!-- 친구톡/문자: 에디터 -->
+            <div id="otEditor">
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div class="form-label" style="margin: 0;">이미지</div>
+                    <label style="font-size: 11px; color: #999;"><input type="checkbox" checked style="margin-right: 4px;">On</label>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;"><input type="radio" name="imgType" checked> 직접 등록</label>
+                    <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;"><input type="radio" name="imgType"> 템플릿 기본 이미지</label>
+                  </div>
+                </div>
+                <div>
+                  <div class="form-label">내용</div>
+                  <textarea class="form-input" style="height: 100px; resize: none;" placeholder="내용을 입력하세요"></textarea>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div class="form-label" style="margin: 0;">실패시 대체 문자 발송</div>
+                    <label style="font-size: 11px; color: #999;"><input type="checkbox" style="margin-right: 4px;">On</label>
+                  </div>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div class="form-label" style="margin: 0;">버튼</div>
+                    <label style="font-size: 11px; color: #999;"><input type="checkbox" checked style="margin-right: 4px;">On</label>
+                  </div>
+                  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;"><input type="radio" name="btnType" checked> 링크</label>
+                    <label style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;"><input type="radio" name="btnType"> 쿠폰</label>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 6px;">
+                    <div class="form-label">버튼 문구</div>
+                    <input class="form-input" placeholder="상품 보러가기">
+                  </div>
+                  <div class="form-group">
+                    <div class="form-label">이동 링크</div>
+                    <input class="form-input" placeholder="https://">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 알림톡: 템플릿 선택 -->
+            <div id="otAlimtalk" style="display: none;">
+              <div class="form-label" style="margin-bottom: 8px;">템플릿 선택</div>
+              <div class="template-group-label" style="margin-top: 0;">제공 템플릿</div>
+              <div class="template-item" onclick="pickOnetimeTemplate(this, '쿠폰 만료일 안내')">
+                <span>쿠폰 만료일 안내</span>
+              </div>
+              <div class="template-item" onclick="pickOnetimeTemplate(this, '적립금 보유 안내')">
+                <span>적립금 보유 안내</span>
+              </div>
+              <div class="template-item" onclick="pickOnetimeTemplate(this, '리뷰 작성 요청')">
+                <span>리뷰 작성 요청</span>
+              </div>
+              <div class="template-group-label">내 템플릿</div>
+              <div class="template-item" onclick="pickOnetimeTemplate(this, 'VIP 전용 안내')">
+                <span>VIP 전용 안내</span>
+                <span class="template-status approved">승인완료</span>
+              </div>
+              <div class="template-item disabled">
+                <span>신규 프로모션</span>
+                <span class="template-status pending">검수중</span>
+              </div>
+              <div class="template-add">+ 새 템플릿 만들기</div>
+              <div style="margin-top: 16px;">
+                <div class="form-group">
+                  <div class="form-label">버튼 링크</div>
+                  <input class="form-input" placeholder="https://">
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <!-- 우: 미리보기 -->
+          <div style="flex: 1; display: flex; align-items: flex-start; justify-content: center; background: #f9f9f9; padding: 40px 24px;">
+            <div style="width: 280px;">
+              <div style="font-size: 11px; color: #999; text-align: center; margin-bottom: 8px;" id="otPreviewType">친구톡 이미지형</div>
+              <div style="background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee;">
+                <div style="height: 180px; background: #eee; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 11px;">이미지</div>
+                <div style="padding: 14px;">
+                  <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;" id="otPreviewLabel">(광고) @채널명</div>
+                  <div style="font-size: 11px; color: #bbb; margin-bottom: 12px;">내용 입력</div>
+                  <div style="padding: 8px; background: #f5f5f5; border-radius: 4px; text-align: center; font-size: 11px; color: #999;">버튼 1</div>
+                </div>
+                <div style="padding: 8px 14px 14px; font-size: 10px; color: #bbb; text-align: right;">수신거부 | 홈 > 채널차단</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 누구에게 발송하나요? -->
+      <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+          <span style="font-size: 14px;">👥</span>
+          <span style="font-size: 14px; font-weight: 700;">누구에게 발송하나요?</span>
+          <span style="font-size: 12px; color: #999; margin-left: auto;">전체 회원 2,100명 중 2,100명</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <select class="sc-select" style="flex: 1;">
+            <option>쇼핑몰 전체 회원</option>
+            <option>쿠폰 만료 3일 이내</option>
+            <option>최근 30일 미구매</option>
+            <option>VIP 등급</option>
+            <option>고객 관리 세그먼트</option>
+          </select>
+          <span style="font-size: 12px; color: #999;">──────→</span>
+          <span style="font-size: 12px; color: #999; cursor: pointer;">발송 시간 설정</span>
+          <button class="btn btn-primary" style="font-size: 12px; padding: 6px 16px;">발송</button>
+        </div>
+      </div>
+
+      <!-- 달성할 목표는 무엇인가요? -->
+      <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+          <span style="font-size: 14px;">🎯</span>
+          <span style="font-size: 14px; font-weight: 700;">달성할 목표는 무엇인가요?</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #888;">
+          <span>메시지를 받고</span>
+          <select class="sc-select">
+            <option>7일</option>
+            <option>3일</option>
+            <option>14일</option>
+            <option>30일</option>
+          </select>
+          <span>이내 구매하면 목표 달성</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== CUSTOM FLOW: STEP-BASED ===== -->
+<div class="flow-screen" id="flow-custom">
+  <!-- Header -->
+  <div style="background: #fff; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid #eee; flex-shrink: 0;">
+    <button style="border: none; background: none; font-size: 18px; color: #999; cursor: pointer;" onclick="closeFlow()">✕</button>
+    <span style="font-size: 15px; font-weight: 600;">자동화 캠페인 직접 만들기</span>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary" style="opacity: 0.4;">테스트 발송</button>
+      <button class="btn btn-primary" id="customSaveBtn" onclick="activateCampaign()">캠페인 저장</button>
+    </div>
+  </div>
+
+  <!-- Step cards container -->
+  <div style="flex: 1; overflow-y: auto; background: #f5f5f5; padding: 32px 24px 120px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+
+    <!-- Step 1: 트리거 -->
+    <div class="sc" id="sc1">
+      <div class="sc-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="sc-badge active">1</div>
+          <span class="sc-title">어떤 행동이 발생하면 메시지를 발송할까요?</span>
+        </div>
+      </div>
+      <div class="sc-body">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <select class="sc-select" id="customTrigger">
+            <option>장바구니 담기</option>
+            <option>구매 완료</option>
+            <option>회원 가입</option>
+            <option>배송 완료</option>
+            <option>페이지 방문</option>
+          </select>
+          <span style="font-size: 13px; color: #888;">(이)가 발생하면</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: 발송 시점 -->
+    <div class="sc" id="sc2">
+      <div class="sc-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="sc-badge">2</div>
+          <span class="sc-title">얼마나 기다린 뒤 발송할까요?</span>
+        </div>
+      </div>
+      <div class="sc-body">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 13px; color: #888;">행동이 발생하고</span>
+          <select class="sc-select">
+            <option>즉시</option>
+            <option>1시간 후</option>
+            <option>3시간 후</option>
+            <option>1일 후</option>
+            <option>3일 후</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: 발송 조건 -->
+    <div class="sc" id="sc3">
+      <div class="sc-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="sc-badge">3</div>
+          <span class="sc-title">발송 시점에 확인할 조건이 있나요?</span>
+        </div>
+      </div>
+      <div class="sc-body">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <select class="sc-select">
+            <option>조건 확인 없이</option>
+            <option>장바구니 담은 상품이 있을 때</option>
+            <option>최근 구매 내역이 없을 때</option>
+          </select>
+          <span style="font-size: 13px; color: #888;">메시지 발송</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: 어떤 메시지를 발송할까요? (채널 + 템플릿/에디터 + 미리보기) -->
+    <div class="sc" id="sc4">
+      <div class="sc-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="sc-badge">4</div>
+          <span class="sc-title">어떤 메시지를 발송할까요?</span>
+        </div>
+      </div>
+      <div style="display: flex; height: 600px;">
+        <!-- 좌: 채널 + 설정 -->
+        <div style="width: 440px; padding: 20px 24px; border-right: 1px solid #eee; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; flex-shrink: 0;">
+          <!-- 채널 선택 -->
+          <div>
+            <div class="form-label" style="margin-bottom: 8px;">채널 선택</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div class="sc-channel-radio selected" onclick="selectCustomChannel(this, '친구톡')">
+                <div class="sc-radio-dot"></div>
+                <div style="flex: 1;">
+                  <div style="font-size: 13px; font-weight: 600;">친구톡</div>
+                  <div style="font-size: 11px; color: #999;">카카오 채널 친구 추가 대상에게만 발송</div>
+                  <div class="sc-channel-warn" id="warnKakao1">⚠ 카카오 채널을 연결해주세요 <span class="sc-warn-link" onclick="event.stopPropagation();">지금 설정하기</span></div>
+                </div>
+              </div>
+              <div class="sc-channel-radio" onclick="selectCustomChannel(this, '문자')">
+                <div class="sc-radio-dot"></div>
+                <div style="flex: 1;">
+                  <div style="font-size: 13px; font-weight: 600;">문자</div>
+                  <div style="font-size: 11px; color: #999;">마케팅 수신 동의한 회원에게 발송</div>
+                  <div class="sc-channel-warn" id="warnSms">⚠ 발신번호를 등록해주세요 <span class="sc-warn-link" onclick="event.stopPropagation();">지금 설정하기</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 알림톡: 제거됨 (B안) -->
+          <div id="sc4Alimtalk" style="display: none;"
+            <!-- 기본: 템플릿 선택 -->
+            <div id="templateSelectView">
+              <div class="form-label" style="margin-bottom: 8px;">템플릿 선택</div>
+
+              <div class="template-group-label" style="margin-top: 0;">제공 템플릿</div>
+              <div class="template-item" onclick="pickTemplate(this, '쿠폰 만료일 안내')">
+                <span>쿠폰 만료일 안내</span>
+              </div>
+              <div class="template-item" onclick="pickTemplate(this, '주문 확인 안내')">
+                <span>주문 확인 안내</span>
+              </div>
+              <div class="template-item" onclick="pickTemplate(this, '배송 완료 안내')">
+                <span>배송 완료 안내</span>
+              </div>
+              <div class="template-item" onclick="pickTemplate(this, '적립금 보유 안내')">
+                <span>적립금 보유 안내</span>
+              </div>
+
+              <div class="template-group-label">내 템플릿</div>
+              <div class="template-item" onclick="pickTemplate(this, 'VIP 전용 안내')">
+                <span>VIP 전용 안내</span>
+                <span class="template-status approved">승인완료</span>
+              </div>
+              <div class="template-item disabled" style="justify-content: space-between;">
+                <span>신규 프로모션</span>
+                <span class="template-status pending">검수중</span>
+              </div>
+              <div class="template-item" style="justify-content: space-between; border-color: #fcc;" onclick="showRejectedDetail()">
+                <span>재구매 유도</span>
+                <span class="template-status rejected">반려 · 사유 보기</span>
+              </div>
+              <div class="template-add" onclick="showTemplateCreate()">+ 새 템플릿 만들기</div>
+            </div>
+
+            <!-- 반려 사유 뷰 -->
+            <div id="templateRejectedView" style="display: none;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div class="form-label" style="margin: 0;">반려 사유</div>
+                <span style="font-size: 11px; color: #999; cursor: pointer;" onclick="hideRejectedDetail()">← 돌아가기</span>
+              </div>
+              <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: 600; margin-bottom: 6px;">재구매 유도</div>
+                <div style="font-size: 12px; color: #991B1B; line-height: 1.5;">광고성 내용이 포함되어 있습니다. 알림톡은 정보성 메시지만 허용됩니다. 프로모션/할인 관련 문구를 제거해주세요.</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="hideRejectedDetail()">취소</button>
+                <button class="btn btn-primary" onclick="showTemplateEdit()">수정하기</button>
+              </div>
+            </div>
+
+            <!-- 템플릿 생성/수정 폼 -->
+            <div id="templateCreateView" style="display: none;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div class="form-label" style="margin: 0; font-size: 13px; font-weight: 600;" id="templateFormTitle">새 템플릿 만들기</div>
+                <span style="font-size: 11px; color: #999; cursor: pointer;" onclick="hideTemplateCreate()">← 돌아가기</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="form-group">
+                  <div class="form-label">카테고리</div>
+                  <select class="sc-select" style="width: 100%;">
+                    <option>주문/결제</option>
+                    <option>배송</option>
+                    <option>회원</option>
+                    <option>프로모션</option>
+                    <option>기타</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <div class="form-label">템플릿명</div>
+                  <input class="form-input" id="newTemplateName" placeholder="템플릿명을 입력하세요">
+                </div>
+                <div class="form-group">
+                  <div class="form-label">내용</div>
+                  <textarea class="form-input" style="height: 100px; resize: none;" placeholder="메시지 내용을 입력하세요&#10;변수: #{고객명}, #{주문번호} 등"></textarea>
+                </div>
+                <div class="form-group">
+                  <div class="form-label">버튼</div>
+                  <input class="form-input" placeholder="버튼명 (예: 주문 확인하기)">
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="submitTemplateReview()">검수 요청</button>
+              </div>
+            </div>
+
+            <!-- 검수 요청 완료 -->
+            <div id="templateSubmittedView" style="display: none;">
+              <div style="text-align: center; padding: 40px 0;">
+                <div style="font-size: 32px; margin-bottom: 12px;">✓</div>
+                <div style="font-size: 15px; font-weight: 700; margin-bottom: 6px;">검수 요청 완료</div>
+                <div style="font-size: 12px; color: #999; margin-bottom: 24px; line-height: 1.5;">승인까지 1~3영업일 소요됩니다.<br>검수 완료 시 알림톡으로 안내드립니다.</div>
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                  <button class="btn btn-secondary" onclick="backToTemplateSelect()">다른 템플릿 선택</button>
+                  <button class="btn btn-primary" onclick="closeFlow()">확인</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 친구톡/문자: 에디터 -->
+          <div id="sc4Editor">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="form-group">
+                <div class="form-label">제목</div>
+                <input class="form-input" placeholder="제목을 입력하세요">
+              </div>
+              <div class="form-group">
+                <div class="form-label">본문</div>
+                <textarea class="form-input" style="height: 120px; resize: none;" placeholder="본문을 입력하세요"></textarea>
+              </div>
+              <div class="form-group">
+                <div class="form-label">버튼</div>
+                <input class="form-input" placeholder="버튼명">
+                <input class="form-input" placeholder="https://" style="margin-top: 6px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- 메시지 작성 버튼 (알림톡) -->
+          <div id="sc4AlimtalkBtn" style="display: none;">
+            <div class="form-group">
+              <div class="form-label">버튼 링크</div>
+              <input class="form-input" placeholder="https://">
+            </div>
+          </div>
+        </div>
+
+        <!-- 우: 미리보기 -->
+        <div style="flex: 1; display: flex; align-items: flex-start; justify-content: center; background: #f9f9f9; padding: 40px 24px; position: sticky; top: 0;">
+          <div style="width: 280px;">
+            <div style="background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee;">
+              <div style="height: 180px; background: #eee; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 11px;">이미지</div>
+              <div style="padding: 14px;">
+                <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;" id="previewChannelLabel">알림톡</div>
+                <div style="font-size: 11px; color: #bbb; margin-bottom: 12px;">본문 입력</div>
+                <div style="padding: 8px; background: #f5f5f5; border-radius: 4px; text-align: center; font-size: 11px; color: #999;">버튼 1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== PRESET SIDE PANEL ===== -->
+<div class="side-panel" id="presetPanel">
+  <div class="side-panel-header">
+    <h3 id="presetName">프리셋 설정</h3>
+    <button class="modal-close" onclick="closePresetPanel()">✕</button>
+  </div>
+  <div class="side-panel-body">
+    <div class="form-preview">
+      <div class="form-preview-label">미리보기</div>
+      <div class="form-preview-box"></div>
+    </div>
+
+    <div class="form-group" id="presetChannelGroup">
+      <div class="form-label">채널</div>
+      <div id="presetChannelFixed" style="display:none;">
+        <div style="display: inline-block; padding: 6px 14px; background: #FEE500; border-radius: 6px; font-size: 12px; font-weight: 600;">알림톡</div>
+        <div class="preset-channel-warn" id="presetWarnKakao" style="font-size: 11px; color: #DC6803; margin-top: 8px; padding: 6px 10px; background: #FFF8EB; border-radius: 4px;">⚠ 카카오 채널을 연결해주세요 <span style="font-weight: 600; text-decoration: underline; cursor: pointer; margin-left: 4px;">지금 설정하기</span></div>
+      </div>
+      <div class="channel-select" id="presetChannelSelect" style="display:none;">
+        <div class="channel-option selected" onclick="selectChannel(this); updatePresetWarn()">친구톡</div>
+        <div class="channel-option" onclick="selectChannel(this); updatePresetWarn()">문자</div>
+      </div>
+      <div id="presetSelectWarn" style="display:none; font-size: 11px; color: #DC6803; margin-top: 8px; padding: 6px 10px; background: #FFF8EB; border-radius: 4px;"></div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">발송 조건</div>
+      <input class="form-input readonly" value="트리거 자동 설정됨" readonly>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">버튼 링크</div>
+      <input class="form-input" placeholder="https://">
+    </div>
+  </div>
+  <div class="side-panel-footer">
+    <button class="btn btn-secondary" onclick="closePresetPanel()">취소</button>
+    <button class="btn btn-primary" onclick="activateFromPanel()">이 프리셋으로 시작하기</button>
+  </div>
+</div>
+
+<script>
+  // Navigation
+  function navigate(page) {
+    document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+
+    currentPage = page;
+    if (page === 'auto-list') {
+      document.getElementById('page-auto-list').classList.remove('hidden');
+      document.getElementById('menu-auto-list').classList.add('active');
+      document.getElementById('breadcrumb').textContent = '메시지 캠페인 > 자동화';
+      document.getElementById('pageTitle').textContent = '캠페인 목록';
+    } else if (page === 'auto-analytics') {
+      document.getElementById('page-auto-analytics').classList.remove('hidden');
+      document.getElementById('menu-auto-analytics').classList.add('active');
+      document.getElementById('breadcrumb').textContent = '메시지 캠페인 > 자동화';
+      document.getElementById('pageTitle').textContent = '통계';
+    } else if (page === 'onetime-list') {
+      document.getElementById('page-onetime-list').classList.remove('hidden');
+      document.getElementById('menu-onetime-list').classList.add('active');
+      document.getElementById('breadcrumb').textContent = '메시지 캠페인 > 일회성';
+      document.getElementById('pageTitle').textContent = '캠페인 목록';
+    } else if (page === 'alimtalk') {
+      document.getElementById('page-alimtalk').classList.remove('hidden');
+      document.getElementById('menu-alimtalk').classList.add('active');
+      document.getElementById('breadcrumb').textContent = '알림 메시지';
+      document.getElementById('pageTitle').textContent = '알림 관리';
+    } else if (page === 'alimtalk-stats') {
+      document.getElementById('page-alimtalk-stats').classList.remove('hidden');
+      document.getElementById('menu-alimtalk-stats').classList.add('active');
+      document.getElementById('breadcrumb').textContent = '알림 메시지';
+      document.getElementById('pageTitle').textContent = '통계';
+    }
+  }
+
+  // Preset banner
+  function closePresetBanner() {
+    document.getElementById('presetBanner').style.display = 'none';
+  }
+
+  // Track current page
+  var currentPage = 'auto-list';
+
+  function openCreateForCurrentPage() {
+    openCreateModal();
+  }
+
+  // Create — full screen preset browse
+  function openCreateModal() {
+    document.getElementById('flow-presetBrowse').classList.add('show');
+    if (currentPage === 'onetime-list') {
+      document.getElementById('presetListArea').style.display = 'none';
+      document.getElementById('presetListAreaOnetime').style.display = '';
+      document.getElementById('presetFilterTabs').style.display = 'none';
+    } else {
+      document.getElementById('presetListArea').style.display = '';
+      document.getElementById('presetListAreaOnetime').style.display = 'none';
+      document.getElementById('presetFilterTabs').style.display = 'none';
+    }
+  }
+  function closeCreateModal() {
+    document.getElementById('flow-presetBrowse').classList.remove('show');
+  }
+
+  // Custom flow
+  var customChannel = '';
+
+  function startCustomFlow() {
+    closeCreateModal();
+    document.getElementById('flow-custom').classList.add('show');
+    customChannel = '친구톡';
+  }
+
+  function selectCustomChannel(el, channel) {
+    document.querySelectorAll('.sc-channel-radio').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    customChannel = channel;
+    if (channel === '알림톡') {
+      document.getElementById('sc4Alimtalk').style.display = '';
+      document.getElementById('sc4AlimtalkBtn').style.display = '';
+      document.getElementById('sc4Editor').style.display = 'none';
+    } else {
+      document.getElementById('sc4Alimtalk').style.display = 'none';
+      document.getElementById('sc4AlimtalkBtn').style.display = 'none';
+      document.getElementById('sc4Editor').style.display = '';
+    }
+    document.getElementById('previewChannelLabel').textContent = channel;
+  }
+
+  // Template views
+  function hideAllTemplateViews() {
+    ['templateSelectView','templateRejectedView','templateCreateView','templateSubmittedView'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  function pickTemplate(el, name) {
+    document.querySelectorAll('#templateSelectView .template-item').forEach(function(i) { i.classList.remove('selected'); });
+    if (!el.classList.contains('disabled')) {
+      el.classList.add('selected');
+      document.getElementById('previewChannelLabel').textContent = '알림톡 · ' + name;
+    }
+  }
+
+  function showRejectedDetail() {
+    hideAllTemplateViews();
+    document.getElementById('templateRejectedView').style.display = '';
+  }
+  function hideRejectedDetail() {
+    hideAllTemplateViews();
+    document.getElementById('templateSelectView').style.display = '';
+  }
+
+  function showTemplateCreate() {
+    hideAllTemplateViews();
+    document.getElementById('templateCreateView').style.display = '';
+    document.getElementById('templateFormTitle').textContent = '새 템플릿 만들기';
+    document.getElementById('newTemplateName').value = '';
+  }
+  function showTemplateEdit() {
+    hideAllTemplateViews();
+    document.getElementById('templateCreateView').style.display = '';
+    document.getElementById('templateFormTitle').textContent = '템플릿 수정';
+    document.getElementById('newTemplateName').value = '재구매 유도';
+  }
+  function hideTemplateCreate() {
+    hideAllTemplateViews();
+    document.getElementById('templateSelectView').style.display = '';
+  }
+
+  function submitTemplateReview() {
+    hideAllTemplateViews();
+    document.getElementById('templateSubmittedView').style.display = '';
+  }
+  function backToTemplateSelect() {
+    hideAllTemplateViews();
+    document.getElementById('templateSelectView').style.display = '';
+  }
+
+  function closeFlow() {
+    document.querySelectorAll('.flow-screen').forEach(el => el.classList.remove('show'));
+  }
+
+  // Preset side panel
+  var alimtalkPresets = ['회원가입 환영', '신규 주문 안내', '입금 안내', '결제 완료', '배송 시작', '배송 완료', '첫구매 감사', '취소 접수 안내', '반품/교환 안내'];
+
+  function openPresetFlow(name, el) {
+    document.querySelectorAll('.preset-list-item').forEach(i => i.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+    else if (event && event.currentTarget) event.currentTarget.classList.add('selected');
+    document.getElementById('presetName').textContent = '[프리셋] ' + name;
+    var isAlimtalk = alimtalkPresets.indexOf(name) !== -1;
+    document.getElementById('presetChannelFixed').style.display = isAlimtalk ? '' : 'none';
+    document.getElementById('presetChannelSelect').style.display = isAlimtalk ? 'none' : '';
+    document.getElementById('presetPanel').classList.add('show');
+  }
+  function closePresetPanel() {
+    document.getElementById('presetPanel').classList.remove('show');
+    document.querySelectorAll('.preset-list-item').forEach(i => i.classList.remove('selected'));
+  }
+  function selectChannel(el) {
+    el.parentElement.querySelectorAll('.channel-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  function updatePresetWarn() {
+    var sel = document.querySelector('#presetChannelSelect .channel-option.selected');
+    var warn = document.getElementById('presetSelectWarn');
+    if (sel && sel.textContent === '친구톡') {
+      warn.style.display = '';
+      warn.innerHTML = '⚠ 카카오 채널을 연결해주세요 <span style="font-weight:600;text-decoration:underline;cursor:pointer;margin-left:4px;">지금 설정하기</span>';
+    } else if (sel && sel.textContent === '문자') {
+      warn.style.display = '';
+      warn.innerHTML = '⚠ 발신번호를 등록해주세요 <span style="font-weight:600;text-decoration:underline;cursor:pointer;margin-left:4px;">지금 설정하기</span>';
+    } else {
+      warn.style.display = 'none';
+    }
+  }
+  var currentPresetName = '';
+  var currentPresetChannel = '알림톡';
+
+  function activateFromPanel() {
+    var name = document.getElementById('presetName').textContent.replace('[프리셋] ', '');
+    var channelFixed = document.getElementById('presetChannelFixed').style.display !== 'none';
+    var channel = '알림톡';
+    if (!channelFixed) {
+      var sel = document.querySelector('#presetChannelSelect .channel-option.selected');
+      channel = sel ? sel.textContent : '친구톡';
+    }
+    if (currentPage === 'onetime-list') {
+      addOnetimeCampaignToList(name, channel, '프리셋');
+    } else {
+      addCampaignToList(name, channel, '프리셋');
+    }
+    closePresetPanel();
+    closeFlow();
+  }
+  function openPresetAll() {
+    // Already on the preset browse screen
+  }
+
+  // Activate (custom flow)
+  function activateCampaign() {
+    var channel = customChannel || '알림톡';
+    var name = '';
+    if (channel === '알림톡') {
+      var sel = document.getElementById('sc4TemplateSelect');
+      name = sel ? sel.value : '알림톡 캠페인';
+    } else {
+      var trigger = document.getElementById('customTrigger');
+      name = (trigger ? trigger.value : '') + ' ' + channel + ' 캠페인';
+    }
+    addCampaignToList(name, channel, '커스텀');
+    closeFlow();
+  }
+
+  // Add campaign to list
+  function addCampaignToList(name, channel, type) {
+    var tbody = document.querySelector('#page-auto-list .campaign-table tbody');
+    var channelClass = channel === '알림톡' ? 'alimtalk' : channel === '친구톡' ? 'friendtalk' : 'sms';
+    var typeClass = type === '프리셋' ? 'preset' : '';
+    var row = document.createElement('tr');
+    row.style.background = '#FFFFF0';
+    row.innerHTML = '<td><strong>' + name + '</strong></td>' +
+      '<td><span class="channel-badge ' + channelClass + '">' + channel + '</span></td>' +
+      '<td><span class="tag ' + typeClass + '">' + type + '</span></td>' +
+      '<td><span class="status active">● 활성</span></td>' +
+      '<td>—</td>';
+    tbody.insertBefore(row, tbody.firstChild);
+    setTimeout(function() { row.style.background = ''; }, 2000);
+    navigate('auto-list');
+  }
+
+  // Analytics tab
+  function switchAnalyticsTab(el, channel) {
+    el.parentElement.querySelectorAll('.segment-item').forEach(function(s) { s.classList.remove('active'); });
+    el.classList.add('active');
+    if (channel === 'alimtalk') {
+      document.getElementById('analyticsKpiFull').style.display = 'none';
+      document.getElementById('analyticsKpiAlimtalk').style.display = '';
+      document.getElementById('analyticsTableFull').style.display = 'none';
+      document.getElementById('analyticsTableAlimtalk').style.display = '';
+      document.getElementById('analyticsMetricSelect').style.display = 'none';
+      document.getElementById('analyticsMetricSelectAlimtalk').style.display = '';
+      document.getElementById('analyticsListCount').textContent = '총 3개의 캠페인';
+    } else {
+      document.getElementById('analyticsKpiFull').style.display = '';
+      document.getElementById('analyticsKpiAlimtalk').style.display = 'none';
+      document.getElementById('analyticsTableFull').style.display = '';
+      document.getElementById('analyticsTableAlimtalk').style.display = 'none';
+      document.getElementById('analyticsMetricSelect').style.display = '';
+      document.getElementById('analyticsMetricSelectAlimtalk').style.display = 'none';
+      if (channel === 'all') {
+        document.getElementById('analyticsKpiCost').textContent = '100,223,344원';
+        document.getElementById('analyticsKpiRevenue').textContent = '100,223,344원';
+        document.getElementById('analyticsKpiRoas').textContent = '700.5%';
+        document.getElementById('analyticsListCount').textContent = '총 6개의 캠페인';
+      } else if (channel === 'friendtalk') {
+        document.getElementById('analyticsKpiCost').textContent = '52,680원';
+        document.getElementById('analyticsKpiRevenue').textContent = '1,234,000원';
+        document.getElementById('analyticsKpiRoas').textContent = '2,343%';
+        document.getElementById('analyticsListCount').textContent = '총 3개의 캠페인';
+      } else {
+        document.getElementById('analyticsKpiCost').textContent = '18,200원';
+        document.getElementById('analyticsKpiRevenue').textContent = '320,000원';
+        document.getElementById('analyticsKpiRoas').textContent = '1,758%';
+        document.getElementById('analyticsListCount').textContent = '총 0개의 캠페인';
+      }
+    }
+  }
+
+  // Campaign detail
+  function openCampaignDetail(name, channel) {
+    document.getElementById('detailCampaignName').textContent = name;
+    var isAlimtalk = channel === 'alimtalk';
+    document.getElementById('detailAlimtalkNotice').style.display = isAlimtalk ? '' : 'none';
+    document.getElementById('detailKpiAlimtalk').style.display = isAlimtalk ? '' : 'none';
+    document.getElementById('detailKpiFriendtalk').style.display = isAlimtalk ? 'none' : '';
+    document.getElementById('detailGoalSection').style.display = isAlimtalk ? 'none' : '';
+    if (!isAlimtalk) {
+      document.getElementById('detailSendingFlow').innerHTML = '<span>장바구니에 담은 후</span><span style="color:#ccc;">──────→</span><span>구매 없이 2일이 지난 고객</span><span style="color:#ccc;">──────→</span><span>매일 오전 11:00 자동 발송</span>';
+    } else {
+      document.getElementById('detailSendingFlow').innerHTML = '<span>회원 가입 후</span><span style="color:#ccc;">──────→</span><span>즉시</span><span style="color:#ccc;">──────→</span><span>자동 발송</span>';
+    }
+    document.getElementById('flow-campaign-detail').classList.add('show');
+  }
+
+  function addOnetimeCampaignToList(name, channel, type) {
+    var tbody = document.getElementById('onetimeTableBody');
+    var channelClass = channel === '알림톡' ? 'alimtalk' : channel === '친구톡' ? 'friendtalk' : 'sms';
+    var typeClass = type === '프리셋' ? 'preset' : '';
+    var row = document.createElement('tr');
+    row.style.background = '#FFFFF0';
+    row.innerHTML = '<td><strong>' + name + '</strong></td>' +
+      '<td><span class="channel-badge ' + channelClass + '">' + channel + '</span></td>' +
+      '<td><span class="tag ' + typeClass + '">' + type + '</span></td>' +
+      '<td><span class="status" style="color:#2563eb;">발송예약</span></td>' +
+      '<td>—</td>';
+    tbody.insertBefore(row, tbody.firstChild);
+    setTimeout(function() { row.style.background = ''; }, 2000);
+    navigate('onetime-list');
+  }
+
+  // Onetime custom flow
+  var onetimeChannel = '알림톡';
+  var onetimeSelectedTemplate = '';
+
+  function startOnetimeCustomFlow() {
+    closeCreateModal();
+    document.getElementById('flow-onetime-channel').classList.add('show');
+  }
+
+  function enterOnetimeEditor(channel) {
+    document.getElementById('flow-onetime-channel').classList.remove('show');
+    document.getElementById('flow-onetime-custom').classList.add('show');
+    onetimeChannel = channel;
+    onetimeSelectedTemplate = '';
+    if (channel === '알림톡') {
+      document.getElementById('otAlimtalk').style.display = '';
+      document.getElementById('otEditor').style.display = 'none';
+      document.getElementById('otPreviewLabel').textContent = '알림톡';
+      document.getElementById('otPreviewType').textContent = '알림톡';
+    } else {
+      document.getElementById('otAlimtalk').style.display = 'none';
+      document.getElementById('otEditor').style.display = '';
+      document.getElementById('otPreviewLabel').textContent = '(광고) @채널명';
+      document.getElementById('otPreviewType').textContent = channel + ' 이미지형';
+    }
+  }
+
+  function pickOnetimeTemplate(el, name) {
+    document.querySelectorAll('#otAlimtalk .template-item').forEach(function(i) { i.classList.remove('selected'); });
+    if (!el.classList.contains('disabled')) {
+      el.classList.add('selected');
+      onetimeSelectedTemplate = name;
+      document.getElementById('otPreviewLabel').textContent = '알림톡 · ' + name;
+    }
+  }
+
+  function saveOnetimeCampaign() {
+    var name = onetimeChannel === '알림톡' ? (onetimeSelectedTemplate || '알림톡 캠페인') : '일회성 ' + onetimeChannel + ' 캠페인';
+    var tbody = document.getElementById('onetimeTableBody');
+    var channelClass = onetimeChannel === '알림톡' ? 'alimtalk' : onetimeChannel === '친구톡' ? 'friendtalk' : 'sms';
+    var row = document.createElement('tr');
+    row.style.background = '#FFFFF0';
+    row.innerHTML = '<td><strong>' + name + '</strong></td>' +
+      '<td><span class="channel-badge ' + channelClass + '">' + onetimeChannel + '</span></td>' +
+      '<td><span class="tag">커스텀</span></td>' +
+      '<td><span class="status" style="color:#2563eb;">발송예약</span></td>' +
+      '<td>—</td>';
+    tbody.insertBefore(row, tbody.firstChild);
+    setTimeout(function() { row.style.background = ''; }, 2000);
+    closeFlow();
+    navigate('onetime-list');
+  }
+
+  // Preset filter
+  function filterPresets(type, el) {
+    document.querySelectorAll('.preset-filter').forEach(f => f.classList.remove('active'));
+    el.classList.add('active');
+    const area = document.getElementById('presetListArea');
+    area.querySelectorAll('.preset-list-item').forEach(item => {
+      if (type === 'all' || item.dataset.type === type) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+    // Hide empty group titles
+    area.querySelectorAll('.preset-group-title').forEach(title => {
+      const group = title.dataset.group;
+      const visible = area.querySelectorAll(`.preset-list-item[data-group="${group}"]:not([style*="display: none"])`);
+      title.style.display = visible.length > 0 ? '' : 'none';
+    });
+  }
+
+  // Preset search
+  function searchPresets(query) {
+    const q = query.toLowerCase();
+    const area = document.getElementById('presetListArea');
+    area.querySelectorAll('.preset-list-item').forEach(item => {
+      const name = item.querySelector('.preset-list-name').textContent.toLowerCase();
+      const desc = item.querySelector('.preset-list-desc').textContent.toLowerCase();
+      item.style.display = (name.includes(q) || desc.includes(q)) ? '' : 'none';
+    });
+    area.querySelectorAll('.preset-group-title').forEach(title => {
+      const group = title.dataset.group;
+      const visible = area.querySelectorAll(`.preset-list-item[data-group="${group}"]:not([style*="display: none"])`);
+      title.style.display = visible.length > 0 ? '' : 'none';
+    });
+  }
+
+  // Segment click
+  document.querySelectorAll('.segment-item:not(.preset-filter)').forEach(item => {
+    item.addEventListener('click', function() {
+      this.parentElement.querySelectorAll('.segment-item').forEach(s => s.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
