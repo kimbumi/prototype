@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>알림 관리 — Final Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: #f0f0f0; display: flex; min-height: 100vh; -webkit-font-smoothing: antialiased; color: #18181b; }
+
+  /* ===== Layout ===== */
+  .sidebar { width: 200px; background: #fff; border-right: 1px solid #e4e4e7; padding: 20px 0; flex-shrink: 0; }
+  .sb-title { font-size: 11px; font-weight: 700; color: #a1a1aa; padding: 4px 16px; margin-bottom: 4px; }
+  .sb-item { padding: 9px 16px; font-size: 13px; color: #71717a; cursor: pointer; }
+  .sb-item:hover { background: #fafafa; }
+  .sb-item.active { background: #f0f0ff; color: #7c3aed; font-weight: 600; }
+  .sb-sep { height: 1px; background: #f4f4f5; margin: 10px 16px; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .main-hdr { padding: 24px 32px 20px; background: #fff; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: center; }
+  .main-title { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+  .main-desc { font-size: 13px; color: #a1a1aa; margin-top: 2px; }
+  .main-body { flex: 1; overflow-y: auto; padding: 24px 32px; background: #f9f9fb; }
+
+  /* State bar */
+  .demo-bar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 600; display: flex; gap: 5px; background: #fff; padding: 6px 10px; border-radius: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+  .demo-btn { padding: 5px 12px; border-radius: 14px; border: 1px solid #e4e4e7; cursor: pointer; font-size: 11px; background: #fff; font-family: inherit; color: #71717a; }
+  .demo-btn.active { background: #18181b; color: #fff; border-color: #18181b; }
+
+  /* ===== 목록 화면 ===== */
+  .period-bar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .period-sel { padding: 7px 12px; border: 1px solid #e4e4e7; border-radius: 8px; font-size: 12px; font-family: inherit; color: #71717a; background: #fff; cursor: pointer; }
+
+  .list-sc { display: flex; gap: 10px; margin-bottom: 20px; }
+  .list-sc-item { flex: 1; background: #fff; border-radius: 12px; padding: 16px 18px; border: 1px solid #e4e4e7; }
+  .list-sc-item.wide { flex: 2; }
+  .list-sc-label { font-size: 11px; color: #a1a1aa; margin-bottom: 4px; }
+  .list-sc-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .list-sc-unit { font-size: 13px; font-weight: 500; color: #a1a1aa; }
+  .list-sc-sub { font-size: 11px; color: #a1a1aa; margin-top: 4px; }
+  .list-sc-empty .list-sc-val { color: #d4d4d8; }
+
+  .group { margin-bottom: 24px; }
+  .group-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.3px; }
+  .preset-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; background: #fff; border: 1px solid #e4e4e7; border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+  .preset-row:hover { border-color: #a1a1aa; }
+  .preset-row.selected { border-color: #7c3aed; background: #faf5ff; }
+  .preset-name { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+  .preset-desc { font-size: 12px; color: #a1a1aa; margin-top: 2px; }
+  .preset-right { display: flex; align-items: center; gap: 14px; }
+  .preset-stat { font-size: 12px; color: #71717a; text-align: right; }
+  .preset-stat.muted { color: #d4d4d8; }
+  .tgl { width: 44px; height: 24px; border-radius: 12px; position: relative; cursor: pointer; display: inline-block; flex-shrink: 0; transition: background 0.2s; }
+  .tgl::after { content: ''; width: 20px; height: 20px; background: #fff; border-radius: 50%; position: absolute; top: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .tgl.on { background: #22c55e; }
+  .tgl.on::after { left: 22px; }
+  .tgl.off { background: #d4d4d8; }
+  .tgl.off::after { left: 2px; }
+
+  /* ===== 사이드 패널 ===== */
+  .panel-overlay { position: fixed; top: 0; right: -440px; width: 440px; height: 100vh; background: #fff; border-left: 1px solid #e4e4e7; box-shadow: -4px 0 24px rgba(0,0,0,0.06); z-index: 400; display: flex; flex-direction: column; transition: right 0.25s ease; }
+  .panel-overlay.show { right: 0; }
+
+  .p-hdr { padding: 24px 24px 20px; border-bottom: 1px solid #f4f4f5; }
+  .p-hdr-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .p-title { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+  .p-desc { font-size: 13px; color: #a1a1aa; margin-top: 3px; }
+  .p-close { font-size: 18px; color: #d4d4d8; cursor: pointer; border: none; background: none; }
+  .p-close:hover { color: #a1a1aa; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-top: 10px; }
+  .badge.unused { background: #f4f4f5; color: #a1a1aa; }
+  .badge.active { background: #ecfdf5; color: #059669; }
+  .badge.inactive { background: #fef2f2; color: #dc2626; }
+
+  .p-period { padding: 12px 24px 0; display: flex; justify-content: flex-end; }
+
+  .p-tabs { display: flex; border-bottom: 1px solid #e4e4e7; padding: 12px 24px 0; }
+  .p-tab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: #a1a1aa; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .p-tab.active { color: #18181b; font-weight: 600; border-bottom-color: #18181b; }
+
+  .p-body { flex: 1; overflow-y: auto; }
+
+  /* Alert */
+  .alert { margin: 16px 24px; padding: 13px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; font-size: 13px; color: #92400e; line-height: 1.5; display: flex; gap: 10px; }
+  .alert a { color: #92400e; font-weight: 600; white-space: nowrap; text-decoration: underline; }
+
+  /* 스코어카드 (사이드) */
+  .p-sc { padding: 16px 24px 8px; }
+  .p-sc-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .p-sc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .p-sc-card { background: #fafafa; border-radius: 10px; padding: 14px 14px; }
+  .p-sc-card.wide { grid-column: span 2; }
+  .p-sc-label { font-size: 11px; color: #a1a1aa; margin-bottom: 4px; }
+  .p-sc-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .p-sc-unit { font-size: 13px; font-weight: 500; color: #a1a1aa; }
+  .p-sc-sub { font-size: 11px; color: #a1a1aa; margin-top: 4px; }
+
+  .p-divider { height: 8px; background: #f4f4f5; margin: 16px 0; }
+
+  /* 미리보기 */
+  .p-section { padding: 0 24px 16px; }
+  .p-section-label { font-size: 11px; font-weight: 600; color: #a1a1aa; margin-bottom: 10px; }
+  .prev-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .prev-tab { padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; border: none; background: #f4f4f5; font-family: inherit; color: #71717a; font-weight: 500; }
+  .prev-tab.active { background: #18181b; color: #fff; }
+
+  .kakao { background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid #e4e4e7; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .kakao-in { padding: 14px 16px; }
+  .kakao-in p { font-size: 13px; color: #3f3f46; line-height: 1.65; }
+  .v { color: #7c3aed; font-weight: 600; }
+  .kakao-hr { height: 1px; background: #f4f4f5; margin: 10px 0; }
+  .kakao-det p { font-size: 12px; color: #71717a; line-height: 1.6; }
+  .kakao-det span { color: #3f3f46; font-weight: 500; }
+  .kakao-btns { border-top: 1px solid #f4f4f5; }
+  .kakao-btns a { display: block; text-align: center; padding: 10px; font-size: 13px; color: #7c3aed; font-weight: 500; border-bottom: 1px solid #f4f4f5; text-decoration: none; }
+  .kakao-btns a:last-child { border-bottom: none; }
+  .sms-bub { background: #f4f4f5; border-radius: 14px; padding: 14px 16px; }
+  .sms-bub p { font-size: 13px; color: #3f3f46; line-height: 1.65; }
+
+  .sum { padding: 16px 18px; background: #fafafa; border-radius: 12px; margin-top: 14px; }
+  .sum-text { font-size: 14px; font-weight: 600; line-height: 1.5; letter-spacing: -0.3px; }
+  .sum-note { font-size: 12px; color: #a1a1aa; margin-top: 5px; line-height: 1.4; }
+  .sum-link { display: inline-block; margin-top: 10px; font-size: 13px; color: #7c3aed; cursor: pointer; border: none; background: none; font-family: inherit; font-weight: 500; padding: 0; }
+
+  .alt { margin-top: 10px; padding: 14px 18px; background: #fafafa; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .alt-t { font-size: 13px; font-weight: 600; }
+  .alt-d { font-size: 11px; color: #a1a1aa; margin-top: 2px; }
+  .alt-w { margin-top: 6px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; font-size: 12px; color: #92400e; }
+  .alt-w a { color: #92400e; font-weight: 600; }
+
+  /* 발송 내역 */
+  .hist { padding: 16px 24px; }
+  .hist-filter { display: flex; gap: 4px; margin-bottom: 12px; }
+  .hist-f-btn { padding: 5px 12px; border-radius: 14px; font-size: 12px; cursor: pointer; border: none; background: #f4f4f5; font-family: inherit; color: #71717a; font-weight: 500; }
+  .hist-f-btn.active { background: #18181b; color: #fff; }
+  .hist table { width: 100%; border-collapse: collapse; }
+  .hist th { text-align: left; padding: 9px 0; font-size: 11px; color: #a1a1aa; font-weight: 500; border-bottom: 1px solid #e4e4e7; }
+  .hist th:last-child { text-align: right; }
+  .hist td { padding: 11px 0; font-size: 12px; color: #3f3f46; border-bottom: 1px solid #f4f4f5; }
+  .hist td:last-child { text-align: right; }
+  .hist tr:last-child td { border-bottom: none; }
+  .hist .ok { color: #059669; font-weight: 500; }
+  .hist .fail { color: #dc2626; font-weight: 500; }
+  .hist-page { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
+  .hist-page span { padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; color: #71717a; }
+  .hist-page span.active { background: #18181b; color: #fff; }
+
+  /* Footer */
+  .p-ftr { padding: 16px 24px 24px; border-top: 1px solid #f4f4f5; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.3px; }
+  .btn:hover { opacity: 0.92; }
+  .btn.primary { background: #18181b; color: #fff; }
+  .btn.primary:disabled { opacity: 0.2; cursor: not-allowed; }
+  .btn.danger { background: #fff; color: #ef4444; border: 1px solid #fecaca; }
+  .btn.outline { background: #fff; color: #18181b; border: 1px solid #18181b; }
+
+  /* Modal */
+  .mo-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: none; align-items: center; justify-content: center; }
+  .mo-bg.show { display: flex; }
+  .mo { background: #fff; border-radius: 16px; width: 400px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+  .mo h4 { font-size: 17px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.3px; }
+  .mo p.mo-desc { font-size: 13px; color: #71717a; line-height: 1.5; margin-bottom: 16px; }
+  .mo .mo-summary { background: #fafafa; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
+  .mo .mo-row { display: flex; justify-content: space-between; padding: 4px 0; }
+  .mo .mo-row .l { font-size: 12px; color: #a1a1aa; }
+  .mo .mo-row .r { font-size: 13px; font-weight: 600; }
+  .mo-f { margin-bottom: 16px; }
+  .mo-f label { font-size: 12px; color: #71717a; display: block; margin-bottom: 6px; font-weight: 500; }
+  .mo-f select, .mo-f input { width: 100%; padding: 11px 14px; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 14px; font-family: inherit; }
+  .mo-f .mo-hint { font-size: 11px; color: #a1a1aa; margin-top: 4px; }
+  .mo-hr { height: 1px; background: #f4f4f5; margin-bottom: 16px; }
+  .mo-acts { display: flex; gap: 8px; margin-top: 24px; }
+  .mo-acts button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .mo-sv { background: #18181b; color: #fff; border: none; }
+  .mo-cn { background: #f4f4f5; color: #71717a; border: none; }
+  .mo-setup { background: #7c3aed; color: #fff; border: none; }
+
+  /* ===== Full Page Detail View ===== */
+  .detail-view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .detail-view.show { display: flex; }
+
+  .detail-hdr { padding: 20px 32px; background: #fff; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: center; }
+  .detail-hdr-left { display: flex; align-items: center; gap: 14px; }
+  .detail-back { font-size: 18px; color: #a1a1aa; cursor: pointer; border: none; background: none; padding: 4px 8px; border-radius: 6px; }
+  .detail-back:hover { background: #f4f4f5; color: #71717a; }
+  .detail-name { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+  .detail-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-left: 10px; vertical-align: middle; }
+  .detail-badge.active { background: #ecfdf5; color: #059669; }
+  .detail-badge.inactive { background: #fef2f2; color: #dc2626; }
+  .detail-hdr-right { display: flex; gap: 8px; }
+  .btn-sm { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
+  .btn-sm.danger { background: #fff; color: #ef4444; border: 1px solid #fecaca; }
+  .btn-sm.outline { background: #fff; color: #18181b; border: 1px solid #18181b; }
+  .btn-sm.settings { background: #f4f4f5; color: #71717a; }
+
+  .detail-toolbar { padding: 16px 32px 0; background: #fff; display: flex; justify-content: space-between; align-items: flex-end; }
+  .detail-tabs { display: flex; gap: 0; }
+  .detail-tab { padding: 10px 18px; font-size: 14px; font-weight: 500; color: #a1a1aa; cursor: pointer; border-bottom: 2px solid transparent; }
+  .detail-tab.active { color: #18181b; font-weight: 600; border-bottom-color: #18181b; }
+  .detail-toolbar-line { height: 1px; background: #e4e4e7; }
+
+  .detail-content { flex: 1; overflow-y: auto; padding: 24px 32px; background: #f9f9fb; }
+
+  /* Detail Scorecards */
+  .d-sc-row { display: flex; gap: 12px; margin-bottom: 24px; }
+  .d-sc { flex: 1; background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; padding: 20px 22px; }
+  .d-sc.wide { flex: 2; }
+  .d-sc-label { font-size: 12px; color: #a1a1aa; margin-bottom: 6px; }
+  .d-sc-val { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .d-sc-unit { font-size: 14px; font-weight: 500; color: #a1a1aa; }
+  .d-sc-sub { font-size: 12px; color: #a1a1aa; margin-top: 6px; }
+
+  /* Detail two column */
+  .d-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Detail card */
+  .d-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; padding: 22px; }
+  .d-card-title { font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 14px; }
+
+  /* Detail settings card */
+  .d-set-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+  .d-set-row + .d-set-row { border-top: 1px solid #f4f4f5; }
+  .d-set-label { font-size: 13px; color: #71717a; }
+  .d-set-val { font-size: 14px; font-weight: 600; }
+  .d-set-note { font-size: 12px; color: #a1a1aa; margin-top: 10px; padding: 10px 12px; background: #fafafa; border-radius: 8px; line-height: 1.4; }
+
+  /* Detail history table */
+  .d-hist table { width: 100%; border-collapse: collapse; }
+  .d-hist th { text-align: left; padding: 12px 16px; font-size: 12px; color: #a1a1aa; font-weight: 500; border-bottom: 1px solid #e4e4e7; }
+  .d-hist th:last-child { text-align: right; }
+  .d-hist td { padding: 14px 16px; font-size: 13px; color: #3f3f46; border-bottom: 1px solid #f4f4f5; }
+  .d-hist td:last-child { text-align: right; }
+  .d-hist tr:hover { background: #fafafa; }
+  .d-hist .ok { color: #059669; font-weight: 500; }
+  .d-hist .fail { color: #dc2626; font-weight: 500; }
+  .d-hist-filter { display: flex; gap: 4px; margin-bottom: 16px; }
+  .d-hist-f { padding: 6px 14px; border-radius: 16px; font-size: 12px; cursor: pointer; border: none; background: #f4f4f5; font-family: inherit; color: #71717a; font-weight: 500; }
+  .d-hist-f.active { background: #18181b; color: #fff; }
+  .d-hist-page { display: flex; justify-content: center; gap: 4px; margin-top: 20px; }
+  .d-hist-page span { padding: 7px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: #71717a; }
+  .d-hist-page span.active { background: #18181b; color: #fff; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- 데모 상태 전환 바 -->
+<div class="demo-bar">
+  <button class="demo-btn active" onclick="setState('unused')">미사용</button>
+  <button class="demo-btn" onclick="setState('active')">활성</button>
+  <button class="demo-btn" onclick="setState('inactive')">비활성</button>
+  <button class="demo-btn" onclick="setState('no-kakao')">카카오 미설정</button>
+  <button class="demo-btn" onclick="setState('no-sms')">SMS 미설정</button>
+</div>
+
+<!-- 사이드바 -->
+<div class="sidebar">
+  <div class="sb-title">메시지 캠페인</div>
+  <div class="sb-item">캠페인 목록</div>
+  <div class="sb-item">캠페인 통계</div>
+  <div class="sb-item">마케팅 레시피</div>
+  <div class="sb-sep"></div>
+  <div class="sb-title">알림 메시지</div>
+  <div class="sb-item active">알림 관리</div>
+</div>
+
+<!-- 메인 (목록 뷰 + 상세 뷰를 감싸는 컨테이너) -->
+<div class="main">
+
+  <!-- ===== 목록 뷰 ===== -->
+  <div id="listView" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+    <div class="main-hdr">
+      <div>
+        <div class="main-title">알림 관리</div>
+        <div class="main-desc">고객 여정에 맞는 알림을 활성화하세요.</div>
+      </div>
+    </div>
+    <div class="main-body">
+
+      <!-- 기간 필터 -->
+      <div class="period-bar">
+        <select class="period-sel">
+          <option>오늘</option><option>최근 7일</option><option>최근 30일</option><option selected>이번 달</option><option>지난 달</option><option>전체 기간</option>
+        </select>
+      </div>
+
+      <!-- 메인 스코어카드 -->
+      <div class="list-sc" id="mainSc">
+        <div class="list-sc-item list-sc-empty">
+          <div class="list-sc-label">발송 시도</div>
+          <div class="list-sc-val">—</div>
+        </div>
+        <div class="list-sc-item list-sc-empty">
+          <div class="list-sc-label">수신 성공 (성공률)</div>
+          <div class="list-sc-val">—</div>
+        </div>
+        <div class="list-sc-item wide list-sc-empty">
+          <div class="list-sc-label">발송 비용</div>
+          <div class="list-sc-val">—</div>
+        </div>
+      </div>
+
+      <!-- 프리셋 목록 -->
+      <div class="group">
+        <div class="group-title">회원가입</div>
+        <div class="preset-row" onclick="openPanel(this, '회원가입 환영', '회원가입 완료 시 환영 메시지 발송')">
+          <div><div class="preset-name">회원가입 환영</div><div class="preset-desc">회원가입 완료 시 환영 메시지 발송</div></div>
+          <div class="preset-right"><span class="preset-stat muted" id="ps0">미사용</span><span class="tgl off"></span></div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-title">혜택 소멸</div>
+        <div class="preset-row" onclick="openPanel(this, '쿠폰 만료 안내', '쿠폰 만료 전 사용을 유도하는 알림')">
+          <div><div class="preset-name">쿠폰 만료 안내</div><div class="preset-desc">쿠폰 만료 전 사용을 유도하는 알림</div></div>
+          <div class="preset-right"><span class="preset-stat muted" id="ps1">미사용</span><span class="tgl off"></span></div>
+        </div>
+        <div class="preset-row" onclick="openPanel(this, '적립금 만료 안내', '적립금 만료 전 사용을 유도하는 알림')">
+          <div><div class="preset-name">적립금 만료 안내</div><div class="preset-desc">적립금 만료 전 사용을 유도하는 알림</div></div>
+          <div class="preset-right"><span class="preset-stat muted" id="ps2">미사용</span><span class="tgl off"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Full Page Detail View (활성/비활성 시) ===== -->
+  <div class="detail-view" id="detailView">
+    <div class="detail-hdr">
+      <div class="detail-hdr-left">
+        <button class="detail-back" title="목록으로" onclick="closeDetail()">✕</button>
+        <div>
+          <span class="detail-name">쿠폰 만료 안내</span>
+          <span class="detail-badge active" id="detailBadge">활성</span>
+        </div>
+      </div>
+      <div class="detail-hdr-right">
+        <button class="btn-sm settings" onclick="openMo('settings')">상세 설정</button>
+        <button class="btn-sm danger" id="detailAction">비활성화</button>
+      </div>
+    </div>
+
+    <div class="detail-toolbar">
+      <div class="detail-tabs">
+        <div class="detail-tab active" onclick="dTab('summary',this)">캠페인 요약</div>
+        <div class="detail-tab" onclick="dTab('history',this)">발송 목록</div>
+      </div>
+      <select class="period-sel" style="margin-bottom:10px;">
+        <option>오늘</option><option>최근 7일</option><option selected>최근 14일</option><option>최근 30일</option><option>이번 달</option><option>지난 달</option><option>전체 기간</option>
+      </select>
+    </div>
+    <div class="detail-toolbar-line"></div>
+
+    <div class="detail-content">
+
+      <!-- 캠페인 요약 탭 -->
+      <div id="dTabSum">
+        <div class="d-sc-row">
+          <div class="d-sc">
+            <div class="d-sc-label">발송 시도</div>
+            <div class="d-sc-val">1,580<span class="d-sc-unit">건</span></div>
+          </div>
+          <div class="d-sc">
+            <div class="d-sc-label">수신 성공</div>
+            <div class="d-sc-val">1,240<span class="d-sc-unit">건</span> <span class="d-sc-unit">(78.5%)</span></div>
+          </div>
+          <div class="d-sc wide">
+            <div class="d-sc-label">발송 비용</div>
+            <div class="d-sc-val">152,300<span class="d-sc-unit">원</span></div>
+            <div class="d-sc-sub">알림톡 900건 · 대체문자 340건</div>
+          </div>
+        </div>
+
+        <div class="d-two-col">
+          <!-- 미리보기 -->
+          <div class="d-card">
+            <div class="d-card-title">미리보기</div>
+            <div class="prev-tabs">
+              <button class="prev-tab active" onclick="dPrevTab('at',this)">알림톡</button>
+              <button class="prev-tab" onclick="dPrevTab('sms',this)">대체 문자</button>
+            </div>
+            <div id="dPrevAt">
+              <div class="kakao">
+                <div class="kakao-in">
+                  <p>안녕하세요 <span class="v">#{{고객 이름}}</span>님.</p>
+                  <p><span class="v">#{{브랜드명}}</span>입니다.</p>
+                  <p style="margin-top:8px;">보유하신 쿠폰이 곧 소멸될 예정입니다.<br>유효기간이 지나면 사용할 수 없습니다.<br>마이페이지에서 확인해 보세요.</p>
+                  <div class="kakao-hr"></div>
+                  <div class="kakao-det">
+                    <p>[ 소멸 예정 쿠폰 ]</p>
+                    <p>■ 쿠폰명 : <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
+                    <p>■ 만료일 : <span class="v">#{{소멸 예정일}}</span></p>
+                  </div>
+                </div>
+                <div class="kakao-btns"><a>채널 추가</a><a>마이페이지</a></div>
+              </div>
+            </div>
+            <div id="dPrevSms" class="hidden">
+              <div class="sms-bub">
+                <p>[<span class="v">#{{브랜드명}}</span>]</p>
+                <p style="margin-top:6px;">보유하신 쿠폰이 곧 소멸될 예정입니다.</p>
+                <p style="margin-top:4px;">■ 쿠폰명: <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
+                <p>■ 만료일: <span class="v">#{{소멸 예정일}}</span></p>
+                <p style="margin-top:8px;color:#7c3aed;font-weight:500;">▶ 마이페이지에서 확인하기</p>
+                <p style="margin-top:10px;font-size:11px;color:#a1a1aa;">무료수신거부 080-XXX-XXXX</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 발송 설정 -->
+          <div class="d-card">
+            <div class="d-card-title">발송 설정</div>
+            <div class="d-set-row"><span class="d-set-label">트리거</span><span class="d-set-val">쿠폰 만료일</span></div>
+            <div class="d-set-row"><span class="d-set-label">발송 시점</span><span class="d-set-val">만료 3일 전 (D-3)</span></div>
+            <div class="d-set-row"><span class="d-set-label">발송 시간</span><span class="d-set-val">오전 10:00</span></div>
+            <div class="d-set-row"><span class="d-set-label">채널</span><span class="d-set-val">알림톡</span></div>
+            <div class="d-set-row"><span class="d-set-label">버튼 링크</span><span class="d-set-val" style="font-size:12px;">myshop.com/mypage</span></div>
+            <div class="d-set-row"><span class="d-set-label">대체 문자</span><span class="tgl on"></span></div>
+            <div class="d-set-note">쿠폰 만료일이 설정된 고객에게만 발송됩니다.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 발송 목록 탭 -->
+      <div id="dTabHist" class="hidden">
+        <div class="d-card d-hist">
+          <div class="d-hist-filter">
+            <button class="d-hist-f active">전체</button>
+            <button class="d-hist-f">성공</button>
+            <button class="d-hist-f">실패</button>
+          </div>
+          <table>
+            <thead><tr><th>고객 아이디</th><th>이름</th><th>핸드폰 번호</th><th>발송</th><th>채널</th><th>수신</th></tr></thead>
+            <tbody>
+              <tr><td>user001</td><td>김**</td><td>010-****-1234</td><td>2026.04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+              <tr><td>user002</td><td>이**</td><td>010-****-5678</td><td>2026.04.05 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+              <tr><td>user003</td><td>박**</td><td>010-****-9012</td><td>2026.04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+              <tr><td>user004</td><td>최**</td><td>010-****-3456</td><td>2026.04.04 10:00</td><td>알림톡</td><td class="fail">실패</td></tr>
+              <tr><td>user005</td><td>정**</td><td>010-****-7890</td><td>2026.04.04 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+              <tr><td>user006</td><td>한**</td><td>010-****-2345</td><td>2026.04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+              <tr><td>user007</td><td>윤**</td><td>010-****-6789</td><td>2026.04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+              <tr><td>user008</td><td>조**</td><td>010-****-0123</td><td>2026.04.02 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+              <tr><td>user009</td><td>서**</td><td>010-****-4567</td><td>2026.04.02 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+              <tr><td>user010</td><td>강**</td><td>010-****-8901</td><td>2026.04.01 10:00</td><td>알림톡</td><td class="fail">실패</td></tr>
+            </tbody>
+          </table>
+          <div class="d-hist-page">
+            <span class="active">1</span><span>2</span><span>3</span><span>4</span><span>→</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- 사이드 패널 -->
+<div class="panel-overlay" id="panel">
+  <div class="p-hdr">
+    <div class="p-hdr-top">
+      <div>
+        <div class="p-title" id="pTitle">쿠폰 만료 안내</div>
+        <div class="p-desc" id="pDesc">쿠폰 만료 전 사용을 유도하는 알림</div>
+      </div>
+      <button class="p-close" onclick="closePanel()">✕</button>
+    </div>
+    <span class="badge unused" id="pBadge">미사용</span>
+  </div>
+
+  <!-- 기간 (활성/비활성 시) -->
+  <div class="p-period hidden" id="pPeriod">
+    <select class="period-sel"><option>오늘</option><option>최근 7일</option><option>최근 30일</option><option selected>이번 달</option><option>지난 달</option><option>전체 기간</option></select>
+  </div>
+
+  <!-- 탭 (활성/비활성 시) -->
+  <div class="p-tabs hidden" id="pTabs">
+    <div class="p-tab active" onclick="pTab('summary',this)">요약</div>
+    <div class="p-tab" onclick="pTab('history',this)">발송 내역</div>
+  </div>
+
+  <div class="p-body">
+
+    <div class="alert hidden" id="pAlert">
+      <span>⚠️</span>
+      <div>알림톡 발송을 위해 카카오톡 채널을 연결해주세요. <a href="#">설정하기</a></div>
+    </div>
+
+    <!-- 요약 탭 -->
+    <div id="tabSum">
+      <!-- 스코어카드 -->
+      <div class="p-sc hidden" id="pSc">
+        <div class="p-sc-title">성과</div>
+        <div class="p-sc-grid">
+          <div class="p-sc-card"><div class="p-sc-label">발송 시도</div><div class="p-sc-val">1,580<span class="p-sc-unit">건</span></div></div>
+          <div class="p-sc-card"><div class="p-sc-label">수신 성공</div><div class="p-sc-val">1,240<span class="p-sc-unit">건</span> <span class="p-sc-unit">(78.5%)</span></div></div>
+          <div class="p-sc-card wide"><div class="p-sc-label">발송 비용</div><div class="p-sc-val">152,300<span class="p-sc-unit">원</span></div><div class="p-sc-sub">알림톡 900건 · 대체문자 340건</div></div>
+        </div>
+      </div>
+      <div class="p-divider hidden" id="pDiv"></div>
+
+      <!-- 알림 설정 -->
+      <div class="p-section" id="pSettings">
+        <div class="p-section-label hidden" id="pSettingsLabel">알림 설정</div>
+        <div class="prev-tabs">
+          <button class="prev-tab active" onclick="prevTab('at',this)">알림톡</button>
+          <button class="prev-tab" onclick="prevTab('sms',this)">대체 문자</button>
+        </div>
+        <div id="prevAt">
+          <div class="kakao">
+            <div class="kakao-in">
+              <p>안녕하세요 <span class="v">#{{고객 이름}}</span>님.</p>
+              <p><span class="v">#{{브랜드명}}</span>입니다.</p>
+              <p style="margin-top:8px;">보유하신 쿠폰이 곧 소멸될 예정입니다.<br>유효기간이 지나면 사용할 수 없습니다.<br>마이페이지에서 확인해 보세요.</p>
+              <div class="kakao-hr"></div>
+              <div class="kakao-det">
+                <p>[ 소멸 예정 쿠폰 ]</p>
+                <p>■ 쿠폰명 : <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
+                <p>■ 만료일 : <span class="v">#{{소멸 예정일}}</span></p>
+              </div>
+            </div>
+            <div class="kakao-btns"><a>채널 추가</a><a>마이페이지</a></div>
+          </div>
+        </div>
+        <div id="prevSms" class="hidden">
+          <div class="sms-bub">
+            <p>[<span class="v">#{{브랜드명}}</span>]</p>
+            <p style="margin-top:6px;">보유하신 쿠폰이 곧 소멸될 예정입니다.</p>
+            <p style="margin-top:4px;">■ 쿠폰명: <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
+            <p>■ 만료일: <span class="v">#{{소멸 예정일}}</span></p>
+            <p style="margin-top:8px;color:#7c3aed;font-weight:500;">▶ 마이페이지에서 확인하기</p>
+            <p style="margin-top:10px;font-size:11px;color:#a1a1aa;">무료수신거부 080-XXX-XXXX</p>
+          </div>
+        </div>
+        <div class="sum">
+          <div class="sum-text">쿠폰 만료 3일 전, 오전 10시에 알림톡 발송</div>
+          <div class="sum-note">쿠폰 만료일이 설정된 고객에게만 발송됩니다.</div>
+          <button class="sum-link" onclick="openMo('settings')">상세 설정 →</button>
+        </div>
+        <div class="alt">
+          <div><div class="alt-t">대체 문자</div><div class="alt-d">알림톡 실패 시 문자로 대체 발송</div></div>
+          <span class="tgl on" id="smsTgl" onclick="tglSms()"></span>
+        </div>
+        <div id="smsW" class="alt-w hidden">SMS 발신번호 미설정. <a href="#">설정하기</a></div>
+      </div>
+    </div>
+
+    <!-- 발송 내역 탭 -->
+    <div id="tabHist" class="hidden">
+      <div class="hist">
+        <div class="hist-filter">
+          <button class="hist-f-btn active">전체</button>
+          <button class="hist-f-btn">성공</button>
+          <button class="hist-f-btn">실패</button>
+        </div>
+        <table>
+          <thead><tr><th>수신자</th><th>발송 시간</th><th>채널</th><th>상태</th></tr></thead>
+          <tbody>
+            <tr><td>김**</td><td>04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+            <tr><td>이**</td><td>04.05 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+            <tr><td>박**</td><td>04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+            <tr><td>최**</td><td>04.04 10:00</td><td>알림톡</td><td class="fail">실패</td></tr>
+            <tr><td>정**</td><td>04.04 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+            <tr><td>한**</td><td>04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+            <tr><td>윤**</td><td>04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
+            <tr><td>조**</td><td>04.02 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+          </tbody>
+        </table>
+        <div class="hist-page">
+          <span class="active">1</span><span>2</span><span>3</span><span>→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-ftr">
+    <button class="btn primary" id="pBtn" onclick="openMo('confirm')">활성화하기</button>
+  </div>
+</div>
+
+<!-- 모달: 상세 설정 -->
+<div class="mo-bg" id="moSettings" onclick="if(event.target===this)closeMo()">
+  <div class="mo">
+    <h4>발송 설정</h4>
+    <div class="mo-row"><span class="l">트리거</span><span class="r">쿠폰 만료일</span></div>
+    <div class="mo-hr"></div>
+    <div class="mo-f">
+      <label>발송 시점 (D-N)</label>
+      <input type="number" id="moTimingInput" min="1" max="7" value="3" placeholder="1~7">
+      <div class="mo-hint">만료일 기준 1~7일 전 (기본값: 3일 전)</div>
+    </div>
+    <div class="mo-f">
+      <label>발송 시간</label>
+      <input type="time" id="moTimeInput" min="09:00" max="19:00" step="1800" value="10:00">
+      <div class="mo-hint">9:00~19:00, 30분 단위 (기본값: 10:00)</div>
+    </div>
+    <div class="mo-f"><label>버튼 링크 (마이페이지)</label><input type="text" value="myshop.com/mypage"></div>
+    <div class="mo-acts"><button class="mo-cn" onclick="closeMo()">취소</button><button class="mo-sv" onclick="closeMo()">저장</button></div>
+  </div>
+</div>
+
+<!-- 모달: 활성화 컨펌 -->
+<div class="mo-bg" id="moConfirm" onclick="if(event.target===this)closeMo()">
+  <div class="mo">
+    <h4>알림을 활성화할까요?</h4>
+    <p class="mo-desc">활성화하면 조건을 충족하는 고객에게 자동으로 메시지가 발송됩니다.</p>
+    <div class="mo-summary">
+      <div class="mo-row"><span class="l">트리거</span><span class="r">쿠폰 만료일</span></div>
+      <div class="mo-row"><span class="l">발송 시점</span><span class="r">만료 3일 전 (D-3)</span></div>
+      <div class="mo-row"><span class="l">발송 시간</span><span class="r">오전 10:00</span></div>
+      <div class="mo-row"><span class="l">채널</span><span class="r">알림톡 + 대체문자</span></div>
+    </div>
+    <div class="mo-acts"><button class="mo-cn" onclick="closeMo()">취소</button><button class="mo-sv" onclick="closeMo()">활성화</button></div>
+  </div>
+</div>
+
+<!-- 모달: 카카오 미설정 -->
+<div class="mo-bg" id="moKakao" onclick="if(event.target===this)closeMo()">
+  <div class="mo" style="text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
+    <h4 style="text-align:center;">카카오톡 채널을 연결해주세요</h4>
+    <p class="mo-desc" style="text-align:center;">알림톡을 발송하려면 카카오톡 채널 연결이 필요합니다.</p>
+    <div class="mo-acts"><button class="mo-cn" onclick="closeMo()">닫기</button><button class="mo-setup" onclick="closeMo()">설정하기</button></div>
+  </div>
+</div>
+
+<script>
+let currentState = 'unused';
+let smsCfg = true;
+
+function setState(s) {
+  currentState = s;
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const mainSc = document.getElementById('mainSc');
+  const hasData = (s === 'active' || s === 'inactive');
+
+  // 메인 스코어카드
+  if (hasData) {
+    mainSc.innerHTML = `
+      <div class="list-sc-item"><div class="list-sc-label">발송 시도</div><div class="list-sc-val">1,580<span class="list-sc-unit">건</span></div></div>
+      <div class="list-sc-item"><div class="list-sc-label">수신 성공 (성공률)</div><div class="list-sc-val">1,240<span class="list-sc-unit">건 (78.5%)</span></div></div>
+      <div class="list-sc-item wide"><div class="list-sc-label">발송 비용</div><div class="list-sc-val">152,300<span class="list-sc-unit">원</span></div><div class="list-sc-sub">알림톡 900건 · 대체문자 340건</div></div>`;
+  } else {
+    mainSc.innerHTML = `
+      <div class="list-sc-item list-sc-empty"><div class="list-sc-label">발송 시도</div><div class="list-sc-val">—</div></div>
+      <div class="list-sc-item list-sc-empty"><div class="list-sc-label">수신 성공 (성공률)</div><div class="list-sc-val">—</div></div>
+      <div class="list-sc-item wide list-sc-empty"><div class="list-sc-label">발송 비용</div><div class="list-sc-val">—</div></div>`;
+  }
+
+  // 프리셋 목록 통계
+  const ps1 = document.getElementById('ps1');
+  if (s === 'active') { ps1.textContent = '수신 성공 1,240건 · 152,300원'; ps1.className = 'preset-stat'; ps1.style.opacity = ''; }
+  else if (s === 'inactive') { ps1.textContent = '수신 성공 1,240건 · 152,300원'; ps1.className = 'preset-stat'; ps1.style.opacity = '0.5'; }
+  else { ps1.textContent = '미사용'; ps1.className = 'preset-stat muted'; ps1.style.opacity = ''; }
+
+  // 상세 뷰가 열려있으면 닫기 (상태 전환 시)
+  closeDetail();
+
+  // 패널 열려있으면 업데이트
+  if (document.getElementById('panel').classList.contains('show')) {
+    updatePanel(s);
+  }
+}
+
+function openPanel(el, name, desc) {
+  document.querySelectorAll('.preset-row').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // 활성/비활성 상태이면 Full Page Detail View 열기
+  if (currentState === 'active' || currentState === 'inactive') {
+    openDetail(name);
+    return;
+  }
+
+  // 그 외 상태는 사이드 패널 열기
+  document.getElementById('pTitle').textContent = name;
+  document.getElementById('pDesc').textContent = desc;
+  updatePanel(currentState);
+  document.getElementById('panel').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('show');
+  document.querySelectorAll('.preset-row').forEach(r => r.classList.remove('selected'));
+}
+
+function openDetail(name) {
+  // 사이드 패널 닫기
+  closePanel();
+
+  // 목록 뷰 숨기고 상세 뷰 표시
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('detailView').classList.add('show');
+
+  // 상세 뷰 이름 업데이트
+  document.querySelector('.detail-name').textContent = name;
+
+  // 상태에 따라 배지/버튼 업데이트
+  const badge = document.getElementById('detailBadge');
+  const action = document.getElementById('detailAction');
+  if (currentState === 'active') {
+    badge.className = 'detail-badge active'; badge.textContent = '활성';
+    action.className = 'btn-sm danger'; action.textContent = '비활성화';
+  } else {
+    badge.className = 'detail-badge inactive'; badge.textContent = '비활성';
+    action.className = 'btn-sm outline'; action.textContent = '다시 활성화';
+  }
+
+  // 탭 초기화
+  document.querySelectorAll('.detail-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  document.getElementById('dTabSum').classList.remove('hidden');
+  document.getElementById('dTabHist').classList.add('hidden');
+}
+
+function closeDetail() {
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('listView').style.display = 'flex';
+  document.querySelectorAll('.preset-row').forEach(r => r.classList.remove('selected'));
+}
+
+function updatePanel(s) {
+  const bd = document.getElementById('pBadge');
+  const bt = document.getElementById('pBtn');
+  const ak = document.getElementById('pAlert');
+  const sw = document.getElementById('smsW');
+  const pp = document.getElementById('pPeriod');
+  const pt = document.getElementById('pTabs');
+  const sc = document.getElementById('pSc');
+  const dv = document.getElementById('pDiv');
+  const sl = document.getElementById('pSettingsLabel');
+
+  ak.classList.add('hidden');
+  sw.classList.add('hidden');
+  bt.disabled = false;
+  smsCfg = true;
+  document.getElementById('smsTgl').className = 'tgl on';
+
+  // 탭 초기화
+  document.querySelectorAll('.p-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  document.getElementById('tabSum').classList.remove('hidden');
+  document.getElementById('tabHist').classList.add('hidden');
+
+  if (s === 'unused' || s === 'no-kakao' || s === 'no-sms') {
+    pp.classList.add('hidden');
+    pt.classList.add('hidden');
+    sc.classList.add('hidden');
+    dv.classList.add('hidden');
+    sl.classList.add('hidden');
+    bd.className = 'badge unused'; bd.textContent = '미사용';
+    bt.className = 'btn primary'; bt.textContent = '활성화하기';
+    bt.onclick = function(){ openMo(s === 'no-kakao' ? 'kakao' : 'confirm'); };
+    if (s === 'no-kakao') { ak.classList.remove('hidden'); bt.disabled = true; }
+    if (s === 'no-sms') { smsCfg = false; sw.classList.remove('hidden'); bt.disabled = true; }
+  } else {
+    pp.classList.remove('hidden');
+    pt.classList.remove('hidden');
+    sc.classList.remove('hidden');
+    dv.classList.remove('hidden');
+    sl.classList.remove('hidden');
+    if (s === 'active') {
+      bd.className = 'badge active'; bd.textContent = '활성';
+      bt.className = 'btn danger'; bt.textContent = '비활성화';
+      bt.onclick = function(){ closePanel(); };
+    } else {
+      bd.className = 'badge inactive'; bd.textContent = '비활성';
+      bt.className = 'btn outline'; bt.textContent = '다시 활성화';
+      bt.onclick = function(){ openMo('confirm'); };
+    }
+  }
+}
+
+function pTab(t, el) {
+  document.querySelectorAll('.p-tab').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tabSum').classList.toggle('hidden', t !== 'summary');
+  document.getElementById('tabHist').classList.toggle('hidden', t !== 'history');
+}
+
+function dTab(t, el) {
+  document.querySelectorAll('.detail-tab').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('dTabSum').classList.toggle('hidden', t !== 'summary');
+  document.getElementById('dTabHist').classList.toggle('hidden', t !== 'history');
+}
+
+function prevTab(t, el) {
+  document.querySelectorAll('#pSettings .prev-tab').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('prevAt').classList.toggle('hidden', t !== 'at');
+  document.getElementById('prevSms').classList.toggle('hidden', t !== 'sms');
+}
+
+function dPrevTab(t, el) {
+  document.querySelectorAll('#dTabSum .prev-tab').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('dPrevAt').classList.toggle('hidden', t !== 'at');
+  document.getElementById('dPrevSms').classList.toggle('hidden', t !== 'sms');
+}
+
+function tglSms() {
+  const t = document.getElementById('smsTgl');
+  t.classList.toggle('on'); t.classList.toggle('off');
+  const w = document.getElementById('smsW');
+  const b = document.getElementById('pBtn');
+  if (t.classList.contains('off')) { w.classList.add('hidden'); b.disabled = false; }
+  else if (!smsCfg) { w.classList.remove('hidden'); b.disabled = true; }
+}
+
+function openMo(type) {
+  document.getElementById('moSettings').classList.toggle('show', type === 'settings');
+  document.getElementById('moConfirm').classList.toggle('show', type === 'confirm');
+  document.getElementById('moKakao').classList.toggle('show', type === 'kakao');
+}
+function closeMo() {
+  document.querySelectorAll('.mo-bg').forEach(m => m.classList.remove('show'));
+}
+</script>
+</body>
+</html>
