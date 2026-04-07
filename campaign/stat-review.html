@@ -193,7 +193,7 @@ function aggregateByCampaign(data) {
     map[key].conv_amt += r.conv_amt;
     map[key].cost += r.cost;
   });
-  return Object.values(map).map(c => ({
+  return Object.values(map).filter(c => c.recv > 0).map(c => ({
     ...c,
     ctr: c.recv > 0 ? (c.click / c.recv * 100) : 0,
     cvr: c.recv > 0 ? (c.conv / c.recv * 100) : 0,
@@ -399,6 +399,21 @@ function toggleDropdown(id) {
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('.dropdown-wrap')) document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+});
+
+// 체크박스 변경 시 버튼 텍스트 업데이트
+document.querySelectorAll('.dropdown-menu').forEach(menu => {
+  menu.addEventListener('change', function() {
+    const btn = this.previousElementSibling;
+    const checks = this.querySelectorAll('input[type="checkbox"]');
+    const checked = Array.from(checks).filter(c => c.checked);
+    if (checked.length === checks.length || checked.length === 0) {
+      btn.innerHTML = '전체 <span style="font-size:10px;color:#999;">▼</span>';
+    } else {
+      const names = checked.map(c => c.parentElement.textContent.trim());
+      btn.innerHTML = names.join(', ') + ' <span style="font-size:10px;color:#999;">▼</span>';
+    }
+  });
 });
 
 function refresh() {
