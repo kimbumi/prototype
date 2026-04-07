@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>캠페인 통계 — 차트 2안: 캠페인 비교</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: #f5f5f5; color: #1a1a1a; font-size: 13px; }
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: #fff; border-right: 1px solid #e5e5e5; flex-shrink: 0; padding: 16px 0; }
+  .sidebar-section { padding: 4px 12px; }
+  .sidebar-section + .sidebar-section { margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+  .sidebar-title { font-size: 11px; font-weight: 700; color: #888; margin-bottom: 6px; padding: 0 8px; }
+  .sidebar-item { padding: 8px 12px; font-size: 13px; color: #555; cursor: pointer; border-radius: 6px; margin-bottom: 2px; }
+  .sidebar-item:hover { background: #f5f5f5; }
+  .sidebar-item.active { background: #EEF2FF; color: #4F46E5; font-weight: 600; }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .page-header { padding: 20px 32px; border-bottom: 1px solid #eee; }
+  .page-title { font-size: 18px; font-weight: 700; }
+  .page-content { flex: 1; overflow-y: auto; padding: 24px 32px; }
+  .scorecards { display: flex; gap: 12px; margin-bottom: 20px; }
+  .scorecard { flex: 1; background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 20px; }
+  .scorecard-label { font-size: 11px; color: #888; margin-bottom: 8px; }
+  .scorecard-value { font-size: 22px; font-weight: 700; }
+  .filters { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  .filter-select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; background: #fff; }
+  .chart-container { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+  .table-container { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 20px; }
+  .table-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 10px; font-size: 11px; color: #888; font-weight: 500; border-bottom: 1px solid #e5e5e5; }
+  td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  th.right, td.right { text-align: right; }
+  tr:hover { background: #fafafa; cursor: pointer; }
+  .dropdown-wrap { position: relative; display: inline-block; }
+  .dropdown-btn { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; background: #fff; cursor: pointer; min-width: 100px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .dropdown-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; min-width: 160px; display: none; padding: 6px 0; }
+  .dropdown-menu.show { display: block; }
+  .dropdown-menu label { display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
+  .dropdown-menu label:hover { background: #f5f5f5; }
+  .dropdown-menu input[type="checkbox"] { accent-color: #4F46E5; }
+  .side-panel { position: fixed; top: 0; right: -400px; width: 400px; height: 100vh; background: #fff; border-left: 1px solid #eee; box-shadow: -4px 0 20px rgba(0,0,0,0.08); z-index: 300; display: flex; flex-direction: column; transition: right 0.2s ease; }
+  .side-panel.show { right: 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">메시지 캠페인</div>
+      <div class="sidebar-item">캠페인 목록</div>
+      <div class="sidebar-item active">캠페인 통계</div>
+      <div class="sidebar-item">마케팅 레시피</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">알림 메시지</div>
+      <div class="sidebar-item">알림 관리</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="page-header"><div class="page-title">캠페인 통계</div></div>
+    <div class="page-content">
+
+      <!-- 스코어카드 -->
+      <div class="scorecards" id="scorecards"></div>
+
+      <!-- 필터 -->
+      <div class="filters">
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-size:12px;color:#888;font-weight:500;">기간</div>
+            <select class="filter-select" id="periodFilter" onchange="refresh()">
+              <option value="7" selected>최근 7일</option>
+              <option value="14">최근 14일</option>
+              <option value="30">최근 30일</option>
+              <option value="90">최근 90일</option>
+              <option value="all">전체 기간</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-size:12px;color:#888;font-weight:500;">캠페인 유형</div>
+            <div class="dropdown-wrap">
+              <div class="dropdown-btn" onclick="toggleDropdown('ddType')">전체 <span style="font-size:10px;color:#999;">▼</span></div>
+              <div class="dropdown-menu" id="ddType">
+                <label><input type="checkbox" checked onchange="refresh()"> 자동화</label>
+                <label><input type="checkbox" checked onchange="refresh()"> 일회성</label>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-size:12px;color:#888;font-weight:500;">채널</div>
+            <div class="dropdown-wrap">
+              <div class="dropdown-btn" onclick="toggleDropdown('ddChannel')">전체 <span style="font-size:10px;color:#999;">▼</span></div>
+              <div class="dropdown-menu" id="ddChannel">
+                <label><input type="checkbox" checked onchange="refresh()"> 친구톡</label>
+                <label><input type="checkbox" checked onchange="refresh()"> 문자</label>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-size:12px;color:#888;font-weight:500;">레이아웃</div>
+            <div class="dropdown-wrap">
+              <div class="dropdown-btn" onclick="toggleDropdown('ddLayout')">전체 <span style="font-size:10px;color:#999;">▼</span></div>
+              <div class="dropdown-menu" id="ddLayout">
+                <label><input type="checkbox" checked onchange="refresh()"> 텍스트형</label>
+                <label><input type="checkbox" checked onchange="refresh()"> 이미지형</label>
+                <label><input type="checkbox" checked onchange="refresh()"> 와이드이미지형</label>
+                <label><input type="checkbox" checked onchange="refresh()"> 와이드리스트형</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+        </div>
+      </div>
+
+      <!-- 차트 -->
+      <div class="chart-container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:600;" id="chartTitle">전체 ROAS 추이</div>
+        </div>
+        <canvas id="chart" width="900" height="220" style="width:100%;height:220px;"></canvas>
+        <div id="chartLegend" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding-top:12px;border-top:1px solid #f0f0f0;margin-top:12px;font-size:11px;color:#666;"></div>
+      </div>
+
+      <!-- 비교 테이블 -->
+      <div class="table-container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;">
+            <div class="table-title" style="margin-bottom:0;">캠페인 비교</div>
+            <span style="font-size:13px;color:#888;margin-left:8px;" id="tableCount"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;color:#888;">정렬</span>
+            <select class="filter-select" style="min-width:140px;" id="sortSelect" onchange="currentSortDir='desc';renderTable()">
+              <option value="roas">ROAS 높은순</option>
+              <option value="conv_amt">전환 금액 높은순</option>
+              <option value="cost">발송 비용 높은순</option>
+              <option value="recv">수신 성공 높은순</option>
+              <option value="ctr">클릭률 높은순</option>
+              <option value="cvr">전환율 높은순</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 사이드 패널 -->
+<div class="side-panel" id="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;">
+    <button style="font-size:18px;color:#999;cursor:pointer;border:none;background:none;" onclick="document.getElementById('panel').classList.remove('show')">✕</button>
+    <button style="padding:8px 16px;border-radius:6px;border:none;background:#222;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">상세 보기</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <!-- 유형 + 캠페인명 -->
+    <div style="padding:24px 24px 20px;">
+      <div style="font-size:18px;font-weight:700;" id="panelName">캠페인명</div>
+      <div style="margin-top:6px;"><span style="font-size:11px;padding:3px 8px;border-radius:4px;background:#f0f0f0;color:#888;font-weight:500;" id="panelType">자동화</span></div>
+    </div>
+    <!-- 소재 미리보기 -->
+    <div style="padding:0 24px 20px;" id="panelPreview">
+      <div style="background:#f7f7f8;border-radius:12px;padding:20px;display:flex;justify-content:center;">
+        <div style="width:240px;">
+          <div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="height:100px;background:#eee;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:11px;">이미지</div>
+            <div style="padding:12px;">
+              <div style="font-size:11px;font-weight:600;margin-bottom:4px;" id="panelPreviewTitle">(광고) @리브비</div>
+              <div style="font-size:10px;color:#888;line-height:1.5;" id="panelPreviewBody">지금 장바구니에 담아두신 상품이 기다리고 있어요!</div>
+              <div style="margin-top:8px;padding:6px;background:#f5f5f5;border-radius:6px;text-align:center;font-size:10px;color:#888;">지금 확인하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 타겟 + 발송 스케줄 -->
+    <div style="padding:0 24px 24px;">
+      <div id="panelCondition" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RAW_DATA = [{"d": "2025-08-11", "t": "일회성", "id": 3249, "n": "리브비 샤워바_생화향_출시 이벤트", "recv": 5427, "click": 178, "conv": 20, "conv_amt": 0, "cost": 179565}, {"d": "2025-10-03", "t": "일회성", "id": 3780, "n": "추석 기획전 안내 시작 (10.3)", "recv": 7412, "click": 302, "conv": 35, "conv_amt": 0, "cost": 185300}, {"d": "2025-10-07", "t": "일회성", "id": 3781, "n": "추석 기획전 D-2 안내(10.7)", "recv": 7574, "click": 289, "conv": 41, "conv_amt": 0, "cost": 189350}, {"d": "2025-10-09", "t": "일회성", "id": 3782, "n": "추석 기획전 종료 안내 (10.9)", "recv": 7644, "click": 274, "conv": 59, "conv_amt": 0, "cost": 191100}, {"d": "2025-09-26", "t": "일회성", "id": 3791, "n": "추석 선물 세트 할인 안내 (9.26)", "recv": 7217, "click": 207, "conv": 23, "conv_amt": 0, "cost": 180425}, {"d": "2025-11-01", "t": "일회성", "id": 4187, "n": "월 초 구매 유도 251101", "recv": 8308, "click": 187, "conv": 19, "conv_amt": 0, "cost": 207700}, {"d": "2025-11-18", "t": "일회성", "id": 4632, "n": "플로럴 향 출시 안내 251118", "recv": 8947, "click": 208, "conv": 19, "conv_amt": 0, "cost": 223675}, {"d": "2025-11-28", "t": "일회성", "id": 4909, "n": "럭스타월 예약판매(251128)", "recv": 5465, "click": 451, "conv": 10, "conv_amt": 0, "cost": 176035}, {"d": "2025-12-06", "t": "일회성", "id": 4938, "n": "12월 초 구매 유도 캠페인(251206)", "recv": 9530, "click": 151, "conv": 25, "conv_amt": 0, "cost": 238225}, {"d": "2025-12-11", "t": "일회성", "id": 5168, "n": "럭스타월 배송 지연 안내(251211)", "recv": 11344, "click": 981, "conv": 7, "conv_amt": 0, "cost": 357770}, {"d": "2025-12-29", "t": "일회성", "id": 5514, "n": "캡세제 예약판매 251229", "recv": 10914, "click": 202, "conv": 10, "conv_amt": 0, "cost": 272850}, {"d": "2026-01-02", "t": "일회성", "id": 5971, "n": "럭스타월 예약판매 260102", "recv": 11128, "click": 197, "conv": 11, "conv_amt": 0, "cost": 278200}, {"d": "2026-01-25", "t": "일회성", "id": 6529, "n": "크림세정제 출시 260123", "recv": 2, "click": 10, "conv": 13, "conv_amt": 0, "cost": 0}, {"d": "2026-01-24", "t": "일회성", "id": 6529, "n": "크림세정제 출시 260123", "recv": 3, "click": 15, "conv": 15, "conv_amt": 0, "cost": 0}, {"d": "2026-01-23", "t": "일회성", "id": 6529, "n": "크림세정제 출시 260123", "recv": 12658, "click": 165, "conv": 34, "conv_amt": 0, "cost": 277488}, {"d": "2026-01-30", "t": "일회성", "id": 6661, "n": "밀폐용기 출시 기념 260130", "recv": 13208, "click": 234, "conv": 29, "conv_amt": 0, "cost": 330200}, {"d": "2026-02-12", "t": "일회성", "id": 6887, "n": "샤워바 100원 핫딜 260212", "recv": 14438, "click": 480, "conv": 51, "conv_amt": 0, "cost": 360950}, {"d": "2026-02-13", "t": "일회성", "id": 7055, "n": "밀폐 용기 예약 판매 260212", "recv": 14536, "click": 200, "conv": 11, "conv_amt": 0, "cost": 363400}, {"d": "2026-03-10", "t": "일회성", "id": 7354, "n": "3월 초 구매 유도 (260226)", "recv": 0, "click": 0, "conv": 3, "conv_amt": 220300, "cost": 0}, {"d": "2026-03-09", "t": "일회성", "id": 7354, "n": "3월 초 구매 유도 (260226)", "recv": 0, "click": 0, "conv": 17, "conv_amt": 1084600, "cost": 0}, {"d": "2026-03-03", "t": "일회성", "id": 7354, "n": "3월 초 구매 유도 (260226)", "recv": 17112, "click": 325, "conv": 50, "conv_amt": 0, "cost": 427800}, {"d": "2026-04-04", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 0, "conv": 5, "conv_amt": 272000, "cost": 0}, {"d": "2026-04-03", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 0, "conv": 18, "conv_amt": 1441700, "cost": 0}, {"d": "2026-04-02", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 0, "conv": 17, "conv_amt": 1236300, "cost": 0}, {"d": "2026-04-01", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 0, "conv": 35, "conv_amt": 2630200, "cost": 0}, {"d": "2026-03-31", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 0, "conv": 21, "conv_amt": 1715300, "cost": 0}, {"d": "2026-03-30", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 0, "conv": 18, "conv_amt": 1311700, "cost": 0}, {"d": "2026-03-29", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 0, "click": 80, "conv": 31, "conv_amt": 2005300, "cost": 0}, {"d": "2026-03-28", "t": "일회성", "id": 7896, "n": "3월 말 구매 유도 260328", "recv": 20169, "click": 842, "conv": 41, "conv_amt": 3116600, "cost": 322704}, {"d": "2026-03-31", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 2, "conv": 14, "conv_amt": 1232100, "cost": 0}, {"d": "2026-03-30", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 1, "conv": 15, "conv_amt": 1125900, "cost": 0}, {"d": "2026-03-29", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 2, "conv": 30, "conv_amt": 1985500, "cost": 0}, {"d": "2026-03-28", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 14, "conv": 41, "conv_amt": 3148200, "cost": 0}, {"d": "2026-03-27", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 12, "conv": 16, "conv_amt": 1020000, "cost": 0}, {"d": "2026-03-26", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 27, "conv": 24, "conv_amt": 1910200, "cost": 0}, {"d": "2026-03-25", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 0, "click": 172, "conv": 45, "conv_amt": 3357000, "cost": 0}, {"d": "2026-03-24", "t": "일회성", "id": 7925, "n": "럭스타월 4차 예약 판매 260324", "recv": 19921, "click": 402, "conv": 21, "conv_amt": 1598300, "cost": 318736}, {"d": "2026-04-07", "t": "일회성", "id": 8261, "n": "4월 초 구매유도(260403)", "recv": 0, "click": 0, "conv": 1, "conv_amt": 214900, "cost": 0}, {"d": "2026-04-06", "t": "일회성", "id": 8261, "n": "4월 초 구매유도(260403)", "recv": 0, "click": 0, "conv": 12, "conv_amt": 619200, "cost": 0}, {"d": "2026-04-05", "t": "일회성", "id": 8261, "n": "4월 초 구매유도(260403)", "recv": 0, "click": 0, "conv": 29, "conv_amt": 1890000, "cost": 0}, {"d": "2026-04-04", "t": "일회성", "id": 8261, "n": "4월 초 구매유도(260403)", "recv": 20885, "click": 486, "conv": 54, "conv_amt": 4059000, "cost": 334144}, {"d": "2026-02-07", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 79, "click": 7, "conv": 3, "conv_amt": 0, "cost": 2545}, {"d": "2026-02-06", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 129, "click": 13, "conv": 3, "conv_amt": 0, "cost": 4175}, {"d": "2026-02-05", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 86, "click": 8, "conv": 2, "conv_amt": 0, "cost": 2435}, {"d": "2026-02-04", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 78, "click": 7, "conv": 5, "conv_amt": 0, "cost": 2400}, {"d": "2026-02-03", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 71, "click": 10, "conv": 5, "conv_amt": 0, "cost": 2155}, {"d": "2026-02-02", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 68, "click": 7, "conv": 1, "conv_amt": 0, "cost": 1985}, {"d": "2026-02-01", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 84, "click": 11, "conv": 7, "conv_amt": 0, "cost": 2170}, {"d": "2026-01-31", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 59, "click": 7, "conv": 2, "conv_amt": 0, "cost": 1950}, {"d": "2026-01-30", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 69, "click": 6, "conv": 7, "conv_amt": 0, "cost": 1915}, {"d": "2026-01-29", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 69, "click": 9, "conv": 5, "conv_amt": 0, "cost": 2200}, {"d": "2026-01-28", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 57, "click": 6, "conv": 4, "conv_amt": 0, "cost": 1520}, {"d": "2026-01-27", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 78, "click": 10, "conv": 4, "conv_amt": 0, "cost": 2045}, {"d": "2026-01-26", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 84, "click": 9, "conv": 2, "conv_amt": 0, "cost": 2860}, {"d": "2026-01-25", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 87, "click": 11, "conv": 2, "conv_amt": 0, "cost": 2530}, {"d": "2026-01-24", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 61, "click": 7, "conv": 3, "conv_amt": 0, "cost": 2000}, {"d": "2026-01-23", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 55, "click": 6, "conv": 1, "conv_amt": 0, "cost": 1755}, {"d": "2026-01-22", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 49, "click": 10, "conv": 6, "conv_amt": 0, "cost": 1795}, {"d": "2026-01-21", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 50, "click": 11, "conv": 4, "conv_amt": 0, "cost": 1630}, {"d": "2026-01-20", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 78, "click": 9, "conv": 1, "conv_amt": 0, "cost": 2425}, {"d": "2026-01-19", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 72, "click": 13, "conv": 3, "conv_amt": 0, "cost": 1800}, {"d": "2026-01-18", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 55, "click": 12, "conv": 8, "conv_amt": 0, "cost": 1470}, {"d": "2026-01-17", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 66, "click": 5, "conv": 2, "conv_amt": 0, "cost": 1745}, {"d": "2026-01-16", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 64, "click": 10, "conv": 5, "conv_amt": 0, "cost": 1790}, {"d": "2026-01-15", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 61, "click": 3, "conv": 5, "conv_amt": 0, "cost": 1620}, {"d": "2026-01-14", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 56, "click": 8, "conv": 3, "conv_amt": 0, "cost": 1590}, {"d": "2026-01-13", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 44, "click": 2, "conv": 3, "conv_amt": 0, "cost": 1195}, {"d": "2026-01-12", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 80, "click": 6, "conv": 1, "conv_amt": 0, "cost": 2095}, {"d": "2026-01-11", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 53, "click": 5, "conv": 4, "conv_amt": 0, "cost": 1515}, {"d": "2026-01-10", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 54, "click": 4, "conv": 2, "conv_amt": 0, "cost": 1635}, {"d": "2026-01-09", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 66, "click": 7, "conv": 5, "conv_amt": 0, "cost": 1840}, {"d": "2026-01-08", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 56, "click": 4, "conv": 1, "conv_amt": 0, "cost": 1590}, {"d": "2026-01-07", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 43, "click": 3, "conv": 2, "conv_amt": 0, "cost": 1360}, {"d": "2026-01-06", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 72, "click": 10, "conv": 8, "conv_amt": 0, "cost": 2060}, {"d": "2026-01-05", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 72, "click": 10, "conv": 2, "conv_amt": 0, "cost": 1845}, {"d": "2026-01-04", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 90, "click": 13, "conv": 7, "conv_amt": 0, "cost": 2630}, {"d": "2026-01-03", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 46, "click": 6, "conv": 5, "conv_amt": 0, "cost": 1340}, {"d": "2026-01-02", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 58, "click": 9, "conv": 9, "conv_amt": 0, "cost": 1545}, {"d": "2026-01-01", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 55, "click": 10, "conv": 2, "conv_amt": 0, "cost": 1445}, {"d": "2025-12-31", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 53, "click": 6, "conv": 5, "conv_amt": 0, "cost": 1585}, {"d": "2025-12-30", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 38, "click": 5, "conv": 2, "conv_amt": 0, "cost": 1045}, {"d": "2025-12-29", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 34, "click": 5, "conv": 0, "conv_amt": 0, "cost": 1040}, {"d": "2025-12-28", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 39, "click": 8, "conv": 3, "conv_amt": 0, "cost": 1045}, {"d": "2025-12-27", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 47, "click": 8, "conv": 3, "conv_amt": 0, "cost": 1270}, {"d": "2025-12-26", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 34, "click": 3, "conv": 0, "conv_amt": 0, "cost": 1040}, {"d": "2025-12-25", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 44, "click": 3, "conv": 3, "conv_amt": 0, "cost": 1145}, {"d": "2025-12-24", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 58, "click": 5, "conv": 1, "conv_amt": 0, "cost": 1805}, {"d": "2025-12-23", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 51, "click": 7, "conv": 2, "conv_amt": 0, "cost": 1535}, {"d": "2025-12-22", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 35, "click": 3, "conv": 1, "conv_amt": 0, "cost": 1160}, {"d": "2025-12-21", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 35, "click": 2, "conv": 5, "conv_amt": 0, "cost": 1065}, {"d": "2025-12-20", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 40, "click": 3, "conv": 5, "conv_amt": 0, "cost": 1095}, {"d": "2025-12-19", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 51, "click": 7, "conv": 2, "conv_amt": 0, "cost": 1415}, {"d": "2025-12-18", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 44, "click": 3, "conv": 2, "conv_amt": 0, "cost": 1290}, {"d": "2025-12-17", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 51, "click": 3, "conv": 4, "conv_amt": 0, "cost": 1275}, {"d": "2025-12-16", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 44, "click": 7, "conv": 4, "conv_amt": 0, "cost": 1455}, {"d": "2025-12-15", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 41, "click": 7, "conv": 2, "conv_amt": 0, "cost": 1215}, {"d": "2025-12-14", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 44, "click": 4, "conv": 6, "conv_amt": 0, "cost": 1385}, {"d": "2025-12-13", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 55, "click": 8, "conv": 1, "conv_amt": 0, "cost": 1515}, {"d": "2025-12-12", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 37, "click": 4, "conv": 4, "conv_amt": 0, "cost": 1020}, {"d": "2025-12-11", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 28, "click": 3, "conv": 1, "conv_amt": 0, "cost": 700}, {"d": "2025-12-10", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 37, "click": 3, "conv": 1, "conv_amt": 0, "cost": 925}, {"d": "2025-12-09", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 48, "click": 4, "conv": 3, "conv_amt": 0, "cost": 1200}, {"d": "2025-12-08", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 61, "click": 4, "conv": 1, "conv_amt": 0, "cost": 1525}, {"d": "2025-12-07", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 2, "conv": 1, "conv_amt": 0, "cost": 650}, {"d": "2025-12-06", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 27, "click": 2, "conv": 5, "conv_amt": 0, "cost": 675}, {"d": "2025-12-05", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 5, "conv": 2, "conv_amt": 0, "cost": 650}, {"d": "2025-12-04", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 1, "conv": 1, "conv_amt": 0, "cost": 500}, {"d": "2025-12-03", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 3, "conv": 2, "conv_amt": 0, "cost": 350}, {"d": "2025-12-02", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 34, "click": 6, "conv": 4, "conv_amt": 0, "cost": 945}, {"d": "2025-12-01", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 22, "click": 1, "conv": 2, "conv_amt": 0, "cost": 645}, {"d": "2025-11-30", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 27, "click": 6, "conv": 1, "conv_amt": 0, "cost": 960}, {"d": "2025-11-29", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 1, "conv": 1, "conv_amt": 0, "cost": 745}, {"d": "2025-11-28", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 0, "conv": 0, "conv_amt": 0, "cost": 640}, {"d": "2025-11-27", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 1, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-11-26", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 16, "click": 2, "conv": 2, "conv_amt": 0, "cost": 400}, {"d": "2025-11-25", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 22, "click": 2, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2025-11-24", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 2, "conv": 2, "conv_amt": 0, "cost": 425}, {"d": "2025-11-23", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 16, "click": 4, "conv": 2, "conv_amt": 0, "cost": 400}, {"d": "2025-11-22", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 3, "conv": 2, "conv_amt": 0, "cost": 375}, {"d": "2025-11-21", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 1, "conv": 1, "conv_amt": 0, "cost": 500}, {"d": "2025-11-20", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 42, "click": 7, "conv": 2, "conv_amt": 0, "cost": 1050}, {"d": "2025-11-19", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 13, "click": 0, "conv": 0, "conv_amt": 0, "cost": 325}, {"d": "2025-11-18", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 0, "conv": 3, "conv_amt": 0, "cost": 500}, {"d": "2025-11-17", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 2, "conv": 2, "conv_amt": 0, "cost": 350}, {"d": "2025-11-16", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 0, "conv": 3, "conv_amt": 0, "cost": 425}, {"d": "2025-11-15", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 1, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-11-14", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 2, "conv": 0, "conv_amt": 0, "cost": 350}, {"d": "2025-11-13", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 16, "click": 0, "conv": 0, "conv_amt": 0, "cost": 400}, {"d": "2025-11-12", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 2, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-11-11", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 27, "click": 1, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2025-11-10", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 1, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-11-09", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 2, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2025-11-08", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 12, "click": 0, "conv": 0, "conv_amt": 0, "cost": 300}, {"d": "2025-11-07", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 23, "click": 3, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2025-11-06", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 3, "click": 0, "conv": 1, "conv_amt": 0, "cost": 75}, {"d": "2025-11-02", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 2, "click": 0, "conv": 2, "conv_amt": 0, "cost": 50}, {"d": "2025-11-01", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 1, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-10-31", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 1, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-10-30", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 27, "click": 3, "conv": 4, "conv_amt": 0, "cost": 675}, {"d": "2025-10-29", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 11, "click": 2, "conv": 2, "conv_amt": 0, "cost": 275}, {"d": "2025-10-28", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 0, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2025-10-27", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 0, "conv": 1, "conv_amt": 0, "cost": 350}, {"d": "2025-10-26", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 25, "click": 0, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-10-25", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 4, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-10-24", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 4, "conv": 1, "conv_amt": 0, "cost": 425}, {"d": "2025-10-23", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 19, "click": 2, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-10-22", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 21, "click": 2, "conv": 1, "conv_amt": 0, "cost": 525}, {"d": "2025-10-21", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 29, "click": 1, "conv": 1, "conv_amt": 0, "cost": 725}, {"d": "2025-10-20", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 16, "click": 1, "conv": 1, "conv_amt": 0, "cost": 400}, {"d": "2025-10-19", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 0, "conv": 2, "conv_amt": 0, "cost": 500}, {"d": "2025-10-18", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 1, "conv": 0, "conv_amt": 0, "cost": 350}, {"d": "2025-10-17", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 11, "click": 1, "conv": 0, "conv_amt": 0, "cost": 275}, {"d": "2025-10-16", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 3, "conv": 2, "conv_amt": 0, "cost": 425}, {"d": "2025-10-15", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 2, "conv": 2, "conv_amt": 0, "cost": 450}, {"d": "2025-10-14", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 31, "click": 9, "conv": 0, "conv_amt": 0, "cost": 775}, {"d": "2025-10-13", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 22, "click": 4, "conv": 2, "conv_amt": 0, "cost": 550}, {"d": "2025-10-12", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 28, "click": 4, "conv": 0, "conv_amt": 0, "cost": 700}, {"d": "2025-10-11", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 48, "click": 4, "conv": 2, "conv_amt": 0, "cost": 1200}, {"d": "2025-10-10", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 23, "click": 3, "conv": 1, "conv_amt": 0, "cost": 575}, {"d": "2025-10-09", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 48, "click": 5, "conv": 9, "conv_amt": 0, "cost": 1200}, {"d": "2025-10-08", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 28, "click": 3, "conv": 3, "conv_amt": 0, "cost": 700}, {"d": "2025-10-07", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 34, "click": 2, "conv": 4, "conv_amt": 0, "cost": 850}, {"d": "2025-10-06", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 34, "click": 1, "conv": 2, "conv_amt": 0, "cost": 850}, {"d": "2025-10-05", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 60, "click": 6, "conv": 2, "conv_amt": 0, "cost": 1500}, {"d": "2025-10-04", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 19, "click": 2, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-10-03", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 10, "click": 2, "conv": 3, "conv_amt": 0, "cost": 250}, {"d": "2025-10-02", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 19, "click": 1, "conv": 1, "conv_amt": 0, "cost": 475}, {"d": "2025-10-01", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 12, "click": 2, "conv": 0, "conv_amt": 0, "cost": 300}, {"d": "2025-09-30", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 4, "conv": 4, "conv_amt": 0, "cost": 500}, {"d": "2025-09-29", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 19, "click": 2, "conv": 2, "conv_amt": 0, "cost": 475}, {"d": "2025-09-28", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 39, "click": 5, "conv": 2, "conv_amt": 0, "cost": 975}, {"d": "2025-09-27", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 2, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-09-26", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 12, "click": 0, "conv": 4, "conv_amt": 0, "cost": 300}, {"d": "2025-09-25", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 17, "click": 0, "conv": 1, "conv_amt": 0, "cost": 425}, {"d": "2025-09-24", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 12, "click": 4, "conv": 2, "conv_amt": 0, "cost": 300}, {"d": "2025-09-23", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 25, "click": 0, "conv": 2, "conv_amt": 0, "cost": 625}, {"d": "2025-09-22", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 7, "conv": 5, "conv_amt": 0, "cost": 500}, {"d": "2025-09-21", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 4, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-09-20", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 1, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-09-19", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 16, "click": 0, "conv": 0, "conv_amt": 0, "cost": 400}, {"d": "2025-09-18", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 30, "click": 5, "conv": 0, "conv_amt": 0, "cost": 750}, {"d": "2025-09-17", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 2, "conv": 1, "conv_amt": 0, "cost": 375}, {"d": "2025-09-16", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 32, "click": 5, "conv": 1, "conv_amt": 0, "cost": 895}, {"d": "2025-09-15", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 25, "click": 1, "conv": 0, "conv_amt": 0, "cost": 815}, {"d": "2025-09-14", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 25, "click": 2, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-09-13", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 1, "conv": 1, "conv_amt": 0, "cost": 445}, {"d": "2025-09-12", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 27, "click": 3, "conv": 0, "conv_amt": 0, "cost": 770}, {"d": "2025-09-11", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 15, "click": 1, "conv": 2, "conv_amt": 0, "cost": 470}, {"d": "2025-09-10", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 5, "conv": 3, "conv_amt": 0, "cost": 840}, {"d": "2025-09-09", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 2, "conv": 0, "conv_amt": 0, "cost": 545}, {"d": "2025-09-08", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 32, "click": 8, "conv": 2, "conv_amt": 0, "cost": 800}, {"d": "2025-09-07", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 18, "click": 1, "conv": 2, "conv_amt": 0, "cost": 545}, {"d": "2025-09-06", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 21, "click": 1, "conv": 0, "conv_amt": 0, "cost": 620}, {"d": "2025-09-05", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 3, "conv": 0, "conv_amt": 0, "cost": 935}, {"d": "2025-09-04", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 2, "conv": 2, "conv_amt": 0, "cost": 500}, {"d": "2025-09-03", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 2, "conv": 0, "conv_amt": 0, "cost": 445}, {"d": "2025-09-02", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 23, "click": 0, "conv": 2, "conv_amt": 0, "cost": 670}, {"d": "2025-09-01", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 28, "click": 3, "conv": 1, "conv_amt": 0, "cost": 700}, {"d": "2025-08-31", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 22, "click": 2, "conv": 2, "conv_amt": 0, "cost": 550}, {"d": "2025-08-30", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 14, "click": 1, "conv": 0, "conv_amt": 0, "cost": 350}, {"d": "2025-08-29", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 5, "conv": 1, "conv_amt": 0, "cost": 745}, {"d": "2025-08-28", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 19, "click": 1, "conv": 3, "conv_amt": 0, "cost": 570}, {"d": "2025-08-27", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 2, "conv": 1, "conv_amt": 0, "cost": 745}, {"d": "2025-08-26", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 26, "click": 3, "conv": 2, "conv_amt": 0, "cost": 745}, {"d": "2025-08-25", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 23, "click": 1, "conv": 1, "conv_amt": 0, "cost": 575}, {"d": "2025-08-24", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 20, "click": 6, "conv": 2, "conv_amt": 0, "cost": 595}, {"d": "2025-08-23", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 31, "click": 5, "conv": 2, "conv_amt": 0, "cost": 1060}, {"d": "2025-08-22", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 25, "click": 2, "conv": 1, "conv_amt": 0, "cost": 625}, {"d": "2025-08-21", "t": "자동화", "id": 3364, "n": "장바구니 구매 유도 250820", "recv": 27, "click": 1, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2026-02-10", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 2, "conv": 0, "conv_amt": 0, "cost": 670}, {"d": "2026-02-09", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 1, "conv": 0, "conv_amt": 0, "cost": 545}, {"d": "2026-02-08", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 0, "conv": 2, "conv_amt": 0, "cost": 595}, {"d": "2026-02-07", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 40, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1475}, {"d": "2026-02-06", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 2, "conv": 0, "conv_amt": 0, "cost": 960}, {"d": "2026-02-05", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 22, "click": 2, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2026-02-04", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 3, "conv": 0, "conv_amt": 0, "cost": 910}, {"d": "2026-02-03", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 24, "click": 2, "conv": 0, "conv_amt": 0, "cost": 790}, {"d": "2026-02-02", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1225}, {"d": "2026-02-01", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1130}, {"d": "2026-01-31", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 46, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1625}, {"d": "2026-01-30", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 51, "click": 3, "conv": 1, "conv_amt": 0, "cost": 1655}, {"d": "2026-01-29", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 24, "click": 4, "conv": 1, "conv_amt": 0, "cost": 980}, {"d": "2026-01-28", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 1, "conv": 0, "conv_amt": 0, "cost": 840}, {"d": "2026-01-27", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 2, "conv": 1, "conv_amt": 0, "cost": 575}, {"d": "2026-01-26", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 3, "conv": 0, "conv_amt": 0, "cost": 910}, {"d": "2026-01-25", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 5, "conv": 1, "conv_amt": 0, "cost": 615}, {"d": "2026-01-24", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 0, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2026-01-23", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 2, "conv": 1, "conv_amt": 0, "cost": 835}, {"d": "2026-01-22", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 34, "click": 5, "conv": 1, "conv_amt": 0, "cost": 1610}, {"d": "2026-01-21", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 0, "conv": 1, "conv_amt": 0, "cost": 895}, {"d": "2026-01-20", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 2, "conv": 0, "conv_amt": 0, "cost": 840}, {"d": "2026-01-19", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 24, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1075}, {"d": "2026-01-18", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 2, "conv": 0, "conv_amt": 0, "cost": 965}, {"d": "2026-01-17", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 33, "click": 1, "conv": 0, "conv_amt": 0, "cost": 1180}, {"d": "2026-01-16", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 0, "conv": 1, "conv_amt": 0, "cost": 775}, {"d": "2026-01-15", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 29, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1105}, {"d": "2026-01-14", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 4, "conv": 0, "conv_amt": 0, "cost": 980}, {"d": "2026-01-13", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 3, "conv": 2, "conv_amt": 0, "cost": 965}, {"d": "2026-01-12", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 4, "conv": 1, "conv_amt": 0, "cost": 1125}, {"d": "2026-01-11", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 1, "conv": 1, "conv_amt": 0, "cost": 895}, {"d": "2026-01-10", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 29, "click": 3, "conv": 0, "conv_amt": 0, "cost": 915}, {"d": "2026-01-09", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1035}, {"d": "2026-01-08", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 4, "conv": 1, "conv_amt": 0, "cost": 985}, {"d": "2026-01-07", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 93, "click": 6, "conv": 3, "conv_amt": 0, "cost": 3130}, {"d": "2026-01-06", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 43, "click": 0, "conv": 1, "conv_amt": 0, "cost": 1265}, {"d": "2026-01-05", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 64, "click": 4, "conv": 1, "conv_amt": 0, "cost": 1980}, {"d": "2026-01-04", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 35, "click": 3, "conv": 0, "conv_amt": 0, "cost": 1160}, {"d": "2026-01-03", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 34, "click": 1, "conv": 1, "conv_amt": 0, "cost": 1135}, {"d": "2026-01-02", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 40, "click": 3, "conv": 4, "conv_amt": 0, "cost": 1285}, {"d": "2026-01-01", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 61, "click": 5, "conv": 2, "conv_amt": 0, "cost": 1665}, {"d": "2025-12-31", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 29, "click": 2, "conv": 1, "conv_amt": 0, "cost": 1200}, {"d": "2025-12-30", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 1, "conv": 0, "conv_amt": 0, "cost": 770}, {"d": "2025-12-29", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 0, "conv": 1, "conv_amt": 0, "cost": 845}, {"d": "2025-12-28", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 3, "conv": 1, "conv_amt": 0, "cost": 545}, {"d": "2025-12-27", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 1, "conv": 0, "conv_amt": 0, "cost": 795}, {"d": "2025-12-26", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 2, "conv": 2, "conv_amt": 0, "cost": 620}, {"d": "2025-12-25", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 2, "conv": 1, "conv_amt": 0, "cost": 895}, {"d": "2025-12-24", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 35, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1350}, {"d": "2025-12-23", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 6, "conv": 0, "conv_amt": 0, "cost": 1340}, {"d": "2025-12-22", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 36, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1255}, {"d": "2025-12-21", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 1, "conv": 1, "conv_amt": 0, "cost": 595}, {"d": "2025-12-20", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 35, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1065}, {"d": "2025-12-19", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 15, "click": 1, "conv": 0, "conv_amt": 0, "cost": 565}, {"d": "2025-12-18", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 3, "conv": 0, "conv_amt": 0, "cost": 760}, {"d": "2025-12-17", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 0, "conv": 0, "conv_amt": 0, "cost": 1130}, {"d": "2025-12-16", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 35, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1160}, {"d": "2025-12-15", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 3, "conv": 0, "conv_amt": 0, "cost": 935}, {"d": "2025-12-14", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1035}, {"d": "2025-12-13", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1080}, {"d": "2025-12-12", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 2, "conv": 2, "conv_amt": 0, "cost": 810}, {"d": "2025-12-11", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 0, "conv": 1, "conv_amt": 0, "cost": 775}, {"d": "2025-12-10", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 1, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-12-09", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 39, "click": 3, "conv": 0, "conv_amt": 0, "cost": 975}, {"d": "2025-12-08", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 0, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2025-12-07", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 0, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-12-06", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 43, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1075}, {"d": "2025-12-05", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 0, "conv": 0, "conv_amt": 0, "cost": 775}, {"d": "2025-12-04", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 3, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-12-03", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 1, "conv": 1, "conv_amt": 0, "cost": 500}, {"d": "2025-12-02", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 4, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2025-12-01", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 40, "click": 3, "conv": 0, "conv_amt": 0, "cost": 1665}, {"d": "2025-11-30", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 40, "click": 3, "conv": 0, "conv_amt": 0, "cost": 1235}, {"d": "2025-11-29", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1080}, {"d": "2025-11-28", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 4, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2025-11-27", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 0, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2025-11-26", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 35, "click": 0, "conv": 1, "conv_amt": 0, "cost": 875}, {"d": "2025-11-25", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 2, "conv": 0, "conv_amt": 0, "cost": 800}, {"d": "2025-11-24", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 1, "conv": 1, "conv_amt": 0, "cost": 700}, {"d": "2025-11-23", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 1, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-11-22", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 2, "conv": 1, "conv_amt": 0, "cost": 800}, {"d": "2025-11-21", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 37, "click": 2, "conv": 0, "conv_amt": 0, "cost": 925}, {"d": "2025-11-20", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 0, "conv": 0, "conv_amt": 0, "cost": 650}, {"d": "2025-11-19", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 0, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2025-11-18", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 4, "conv": 1, "conv_amt": 0, "cost": 800}, {"d": "2025-11-17", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 27, "click": 1, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2025-11-16", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 24, "click": 0, "conv": 0, "conv_amt": 0, "cost": 600}, {"d": "2025-11-15", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 0, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-11-14", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 32, "click": 1, "conv": 0, "conv_amt": 0, "cost": 800}, {"d": "2025-11-13", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 29, "click": 3, "conv": 0, "conv_amt": 0, "cost": 725}, {"d": "2025-11-12", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 1, "conv": 0, "conv_amt": 0, "cost": 775}, {"d": "2025-11-11", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 1, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2025-11-10", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 22, "click": 0, "conv": 1, "conv_amt": 0, "cost": 550}, {"d": "2025-11-09", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 0, "conv": 1, "conv_amt": 0, "cost": 750}, {"d": "2025-11-08", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 36, "click": 0, "conv": 0, "conv_amt": 0, "cost": 900}, {"d": "2025-11-07", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 33, "click": 0, "conv": 1, "conv_amt": 0, "cost": 825}, {"d": "2025-11-06", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 1, "conv": 1, "conv_amt": 0, "cost": 775}, {"d": "2025-11-05", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 22, "click": 2, "conv": 1, "conv_amt": 0, "cost": 550}, {"d": "2025-11-04", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 0, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-11-03", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 2, "conv": 0, "conv_amt": 0, "cost": 650}, {"d": "2025-11-02", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 0, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-11-01", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 1, "conv": 1, "conv_amt": 0, "cost": 775}, {"d": "2025-10-31", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 0, "conv": 0, "conv_amt": 0, "cost": 700}, {"d": "2025-10-30", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 1, "conv": 0, "conv_amt": 0, "cost": 700}, {"d": "2025-10-29", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 1, "conv": 1, "conv_amt": 0, "cost": 625}, {"d": "2025-10-28", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 15, "click": 0, "conv": 1, "conv_amt": 0, "cost": 375}, {"d": "2025-10-27", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 1, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-10-26", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 2, "conv": 1, "conv_amt": 0, "cost": 475}, {"d": "2025-10-25", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 0, "conv": 0, "conv_amt": 0, "cost": 750}, {"d": "2025-10-24", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 29, "click": 0, "conv": 0, "conv_amt": 0, "cost": 725}, {"d": "2025-10-23", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 0, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-10-22", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 16, "click": 1, "conv": 0, "conv_amt": 0, "cost": 400}, {"d": "2025-10-21", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 3, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-10-20", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 22, "click": 1, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2025-10-19", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 1, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-10-18", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 0, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-10-17", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 2, "conv": 1, "conv_amt": 0, "cost": 500}, {"d": "2025-10-16", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 0, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-10-15", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 1, "conv": 1, "conv_amt": 0, "cost": 525}, {"d": "2025-10-14", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 0, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-10-13", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 14, "click": 0, "conv": 0, "conv_amt": 0, "cost": 350}, {"d": "2025-10-12", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 31, "click": 1, "conv": 0, "conv_amt": 0, "cost": 775}, {"d": "2025-10-11", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 1, "conv": 1, "conv_amt": 0, "cost": 475}, {"d": "2025-10-10", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 22, "click": 1, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2025-10-09", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 16, "click": 1, "conv": 1, "conv_amt": 0, "cost": 400}, {"d": "2025-10-08", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 0, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-10-07", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 1, "conv": 1, "conv_amt": 0, "cost": 425}, {"d": "2025-10-06", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 0, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-10-05", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 0, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2025-10-04", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 0, "conv": 1, "conv_amt": 0, "cost": 525}, {"d": "2025-10-03", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 2, "conv": 2, "conv_amt": 0, "cost": 700}, {"d": "2025-10-02", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 22, "click": 1, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2025-10-01", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 15, "click": 0, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-09-30", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 0, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-09-29", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 25, "click": 1, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2025-09-28", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 0, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2025-09-27", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 0, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2025-09-26", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 2, "conv": 2, "conv_amt": 0, "cost": 525}, {"d": "2025-09-25", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 1, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2025-09-24", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 0, "conv": 1, "conv_amt": 0, "cost": 425}, {"d": "2025-09-23", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 15, "click": 1, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-09-22", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 16, "click": 1, "conv": 0, "conv_amt": 0, "cost": 400}, {"d": "2025-09-21", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 15, "click": 1, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-09-20", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 1, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-09-19", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 16, "click": 1, "conv": 0, "conv_amt": 0, "cost": 400}, {"d": "2025-09-18", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 12, "click": 2, "conv": 0, "conv_amt": 0, "cost": 300}, {"d": "2025-09-17", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 3, "conv": 1, "conv_amt": 0, "cost": 575}, {"d": "2025-09-16", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 4, "conv": 1, "conv_amt": 0, "cost": 520}, {"d": "2025-09-15", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 23, "click": 1, "conv": 1, "conv_amt": 0, "cost": 860}, {"d": "2025-09-14", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 30, "click": 3, "conv": 0, "conv_amt": 0, "cost": 845}, {"d": "2025-09-13", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 28, "click": 0, "conv": 1, "conv_amt": 0, "cost": 890}, {"d": "2025-09-12", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1000}, {"d": "2025-09-11", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 26, "click": 2, "conv": 0, "conv_amt": 0, "cost": 745}, {"d": "2025-09-10", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 2, "conv": 1, "conv_amt": 0, "cost": 810}, {"d": "2025-09-09", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 1, "conv": 0, "conv_amt": 0, "cost": 595}, {"d": "2025-09-08", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 19, "click": 1, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-09-07", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 0, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-09-06", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 3, "conv": 0, "conv_amt": 0, "cost": 640}, {"d": "2025-09-05", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 15, "click": 0, "conv": 0, "conv_amt": 0, "cost": 470}, {"d": "2025-09-04", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 1, "conv": 1, "conv_amt": 0, "cost": 735}, {"d": "2025-09-03", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 20, "click": 0, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-09-02", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 1, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2025-09-01", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 17, "click": 0, "conv": 0, "conv_amt": 0, "cost": 615}, {"d": "2025-08-31", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 14, "click": 0, "conv": 0, "conv_amt": 0, "cost": 445}, {"d": "2025-08-30", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 21, "click": 1, "conv": 0, "conv_amt": 0, "cost": 620}, {"d": "2025-08-29", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 8, "click": 0, "conv": 0, "conv_amt": 0, "cost": 485}, {"d": "2025-08-28", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 18, "click": 2, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2025-08-27", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 14, "click": 0, "conv": 0, "conv_amt": 0, "cost": 445}, {"d": "2025-08-26", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 10, "click": 0, "conv": 0, "conv_amt": 0, "cost": 535}, {"d": "2025-08-25", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 13, "click": 1, "conv": 1, "conv_amt": 0, "cost": 420}, {"d": "2025-08-24", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 13, "click": 0, "conv": 0, "conv_amt": 0, "cost": 515}, {"d": "2025-08-23", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 12, "click": 1, "conv": 0, "conv_amt": 0, "cost": 490}, {"d": "2025-08-22", "t": "자동화", "id": 3368, "n": "재구매 유도  250821", "recv": 16, "click": 1, "conv": 0, "conv_amt": 0, "cost": 590}, {"d": "2026-02-10", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 56, "click": 6, "conv": 2, "conv_amt": 0, "cost": 1400}, {"d": "2026-02-09", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 105, "click": 12, "conv": 6, "conv_amt": 0, "cost": 2625}, {"d": "2026-02-08", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 63, "click": 8, "conv": 1, "conv_amt": 0, "cost": 1575}, {"d": "2026-02-07", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 67, "click": 7, "conv": 4, "conv_amt": 0, "cost": 1675}, {"d": "2026-02-06", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 66, "click": 6, "conv": 2, "conv_amt": 0, "cost": 1650}, {"d": "2026-02-05", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 54, "click": 5, "conv": 3, "conv_amt": 0, "cost": 1350}, {"d": "2026-02-04", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 88, "click": 11, "conv": 4, "conv_amt": 0, "cost": 2200}, {"d": "2026-02-03", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 72, "click": 6, "conv": 4, "conv_amt": 0, "cost": 1800}, {"d": "2026-02-02", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 79, "click": 6, "conv": 2, "conv_amt": 0, "cost": 1975}, {"d": "2026-02-01", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 67, "click": 5, "conv": 8, "conv_amt": 0, "cost": 1675}, {"d": "2026-01-31", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 56, "click": 7, "conv": 4, "conv_amt": 0, "cost": 1400}, {"d": "2026-01-30", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 52, "click": 2, "conv": 3, "conv_amt": 0, "cost": 1300}, {"d": "2026-01-29", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 48, "click": 8, "conv": 4, "conv_amt": 0, "cost": 1200}, {"d": "2026-01-28", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 50, "click": 7, "conv": 4, "conv_amt": 0, "cost": 1250}, {"d": "2026-01-27", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 55, "click": 9, "conv": 6, "conv_amt": 0, "cost": 1375}, {"d": "2026-01-26", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 54, "click": 3, "conv": 4, "conv_amt": 0, "cost": 1350}, {"d": "2026-01-25", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 74, "click": 16, "conv": 4, "conv_amt": 0, "cost": 1850}, {"d": "2026-01-24", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 71, "click": 3, "conv": 1, "conv_amt": 0, "cost": 1775}, {"d": "2026-01-23", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 48, "click": 2, "conv": 4, "conv_amt": 0, "cost": 1200}, {"d": "2026-01-22", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 45, "click": 5, "conv": 5, "conv_amt": 0, "cost": 1125}, {"d": "2026-01-21", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 38, "click": 3, "conv": 1, "conv_amt": 0, "cost": 950}, {"d": "2026-01-20", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 42, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1050}, {"d": "2026-01-19", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 65, "click": 3, "conv": 4, "conv_amt": 0, "cost": 1625}, {"d": "2026-01-18", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 57, "click": 6, "conv": 3, "conv_amt": 0, "cost": 1425}, {"d": "2026-01-17", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 51, "click": 6, "conv": 3, "conv_amt": 0, "cost": 1275}, {"d": "2026-01-16", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 62, "click": 8, "conv": 2, "conv_amt": 0, "cost": 1550}, {"d": "2026-01-15", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 46, "click": 5, "conv": 4, "conv_amt": 0, "cost": 1150}, {"d": "2026-01-14", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 54, "click": 4, "conv": 3, "conv_amt": 0, "cost": 1350}, {"d": "2026-01-13", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 46, "click": 5, "conv": 4, "conv_amt": 0, "cost": 1150}, {"d": "2026-01-12", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 57, "click": 6, "conv": 3, "conv_amt": 0, "cost": 1425}, {"d": "2026-01-11", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 58, "click": 3, "conv": 1, "conv_amt": 0, "cost": 1450}, {"d": "2026-01-10", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 52, "click": 8, "conv": 4, "conv_amt": 0, "cost": 1300}, {"d": "2026-01-09", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 37, "click": 2, "conv": 3, "conv_amt": 0, "cost": 925}, {"d": "2026-01-08", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 56, "click": 7, "conv": 3, "conv_amt": 0, "cost": 1400}, {"d": "2026-01-07", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 47, "click": 6, "conv": 3, "conv_amt": 0, "cost": 1175}, {"d": "2026-01-06", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 43, "click": 2, "conv": 6, "conv_amt": 0, "cost": 1075}, {"d": "2026-01-05", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 64, "click": 3, "conv": 1, "conv_amt": 0, "cost": 1600}, {"d": "2026-01-04", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 47, "click": 7, "conv": 5, "conv_amt": 0, "cost": 1175}, {"d": "2026-01-03", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 52, "click": 5, "conv": 4, "conv_amt": 0, "cost": 1300}, {"d": "2026-01-02", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 49, "click": 5, "conv": 2, "conv_amt": 0, "cost": 1225}, {"d": "2026-01-01", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 35, "click": 1, "conv": 2, "conv_amt": 0, "cost": 875}, {"d": "2025-12-31", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 36, "click": 5, "conv": 3, "conv_amt": 0, "cost": 900}, {"d": "2025-12-30", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 22, "click": 2, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2025-12-29", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 29, "click": 4, "conv": 3, "conv_amt": 0, "cost": 725}, {"d": "2025-12-28", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 26, "click": 3, "conv": 2, "conv_amt": 0, "cost": 650}, {"d": "2025-12-27", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 36, "click": 0, "conv": 4, "conv_amt": 0, "cost": 900}, {"d": "2025-12-26", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 41, "click": 5, "conv": 2, "conv_amt": 0, "cost": 1025}, {"d": "2025-12-25", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 33, "click": 3, "conv": 2, "conv_amt": 0, "cost": 825}, {"d": "2025-12-24", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 32, "click": 3, "conv": 4, "conv_amt": 0, "cost": 800}, {"d": "2025-12-23", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 51, "click": 10, "conv": 2, "conv_amt": 0, "cost": 1275}, {"d": "2025-12-22", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 50, "click": 7, "conv": 3, "conv_amt": 0, "cost": 1250}, {"d": "2025-12-21", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 36, "click": 3, "conv": 5, "conv_amt": 0, "cost": 900}, {"d": "2025-12-20", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 33, "click": 4, "conv": 3, "conv_amt": 0, "cost": 825}, {"d": "2025-12-19", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 35, "click": 1, "conv": 2, "conv_amt": 0, "cost": 875}, {"d": "2025-12-18", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 39, "click": 1, "conv": 6, "conv_amt": 0, "cost": 975}, {"d": "2025-12-17", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 48, "click": 10, "conv": 7, "conv_amt": 0, "cost": 1200}, {"d": "2025-12-16", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 33, "click": 3, "conv": 0, "conv_amt": 0, "cost": 825}, {"d": "2025-12-15", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 43, "click": 7, "conv": 4, "conv_amt": 0, "cost": 1075}, {"d": "2025-12-14", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 41, "click": 7, "conv": 7, "conv_amt": 0, "cost": 1025}, {"d": "2025-12-13", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 36, "click": 2, "conv": 1, "conv_amt": 0, "cost": 900}, {"d": "2025-12-12", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 35, "click": 4, "conv": 2, "conv_amt": 0, "cost": 875}, {"d": "2025-12-11", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 30, "click": 4, "conv": 1, "conv_amt": 0, "cost": 750}, {"d": "2025-12-10", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 29, "click": 5, "conv": 3, "conv_amt": 0, "cost": 725}, {"d": "2025-12-09", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 31, "click": 3, "conv": 5, "conv_amt": 0, "cost": 775}, {"d": "2025-12-08", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 48, "click": 4, "conv": 2, "conv_amt": 0, "cost": 1200}, {"d": "2025-12-07", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 39, "click": 5, "conv": 2, "conv_amt": 0, "cost": 975}, {"d": "2025-12-06", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 27, "click": 0, "conv": 3, "conv_amt": 0, "cost": 675}, {"d": "2025-12-05", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 24, "click": 4, "conv": 2, "conv_amt": 0, "cost": 600}, {"d": "2025-12-04", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 22, "click": 4, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2025-12-03", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 25, "click": 3, "conv": 1, "conv_amt": 0, "cost": 625}, {"d": "2025-12-02", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 19, "click": 1, "conv": 2, "conv_amt": 0, "cost": 475}, {"d": "2025-12-01", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 29, "click": 5, "conv": 3, "conv_amt": 0, "cost": 725}, {"d": "2025-11-30", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 19, "click": 1, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-11-29", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 16, "click": 0, "conv": 1, "conv_amt": 0, "cost": 400}, {"d": "2025-11-28", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 24, "click": 5, "conv": 2, "conv_amt": 0, "cost": 600}, {"d": "2025-11-27", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 19, "click": 2, "conv": 1, "conv_amt": 0, "cost": 475}, {"d": "2025-11-26", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 16, "click": 2, "conv": 2, "conv_amt": 0, "cost": 400}, {"d": "2025-11-25", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 16, "click": 3, "conv": 3, "conv_amt": 0, "cost": 400}, {"d": "2025-11-24", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 25, "click": 5, "conv": 2, "conv_amt": 0, "cost": 625}, {"d": "2025-11-23", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 10, "click": 2, "conv": 2, "conv_amt": 0, "cost": 250}, {"d": "2025-11-22", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 20, "click": 2, "conv": 2, "conv_amt": 0, "cost": 500}, {"d": "2025-11-21", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 14, "click": 0, "conv": 0, "conv_amt": 0, "cost": 350}, {"d": "2025-11-20", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 21, "click": 2, "conv": 2, "conv_amt": 0, "cost": 525}, {"d": "2025-11-19", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 22, "click": 3, "conv": 2, "conv_amt": 0, "cost": 550}, {"d": "2025-11-18", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 16, "click": 1, "conv": 2, "conv_amt": 0, "cost": 400}, {"d": "2025-11-17", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 19, "click": 1, "conv": 2, "conv_amt": 0, "cost": 475}, {"d": "2025-11-16", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 16, "click": 1, "conv": 2, "conv_amt": 0, "cost": 400}, {"d": "2025-11-15", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 18, "click": 2, "conv": 2, "conv_amt": 0, "cost": 450}, {"d": "2025-11-14", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 22, "click": 2, "conv": 1, "conv_amt": 0, "cost": 550}, {"d": "2025-11-13", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 12, "click": 2, "conv": 1, "conv_amt": 0, "cost": 300}, {"d": "2025-11-12", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 1, "click": 2, "conv": 0, "conv_amt": 0, "cost": 25}, {"d": "2025-11-11", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 20, "click": 2, "conv": 1, "conv_amt": 0, "cost": 500}, {"d": "2025-11-10", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 18, "click": 2, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-11-09", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 14, "click": 1, "conv": 1, "conv_amt": 0, "cost": 350}, {"d": "2025-11-08", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 13, "click": 2, "conv": 0, "conv_amt": 0, "cost": 325}, {"d": "2025-11-07", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 22, "click": 5, "conv": 5, "conv_amt": 0, "cost": 550}, {"d": "2025-11-06", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 25, "click": 3, "conv": 1, "conv_amt": 0, "cost": 625}, {"d": "2025-11-05", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 23, "click": 2, "conv": 1, "conv_amt": 0, "cost": 575}, {"d": "2025-11-04", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 18, "click": 3, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2025-11-03", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 29, "click": 4, "conv": 3, "conv_amt": 0, "cost": 725}, {"d": "2025-11-02", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 21, "click": 2, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2025-11-01", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 7, "click": 0, "conv": 0, "conv_amt": 0, "cost": 175}, {"d": "2025-10-31", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 9, "click": 1, "conv": 1, "conv_amt": 0, "cost": 225}, {"d": "2025-10-30", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 19, "click": 2, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2025-10-29", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 28, "click": 1, "conv": 2, "conv_amt": 0, "cost": 700}, {"d": "2025-10-28", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 15, "click": 2, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2025-10-27", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 17, "click": 0, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2025-10-26", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 13, "click": 1, "conv": 1, "conv_amt": 0, "cost": 325}, {"d": "2025-10-25", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 14, "click": 0, "conv": 0, "conv_amt": 0, "cost": 350}, {"d": "2025-10-24", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 16, "click": 1, "conv": 1, "conv_amt": 0, "cost": 400}, {"d": "2025-10-23", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 23, "click": 5, "conv": 1, "conv_amt": 0, "cost": 575}, {"d": "2025-10-22", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 20, "click": 1, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2025-10-21", "t": "자동화", "id": 4161, "n": "첫 구매 유도 251021", "recv": 21, "click": 4, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2026-04-07", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 58, "click": 0, "conv": 1, "conv_amt": 138000, "cost": 1450}, {"d": "2026-04-06", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 105, "click": 8, "conv": 6, "conv_amt": 701400, "cost": 2625}, {"d": "2026-04-05", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 73, "click": 2, "conv": 2, "conv_amt": 111000, "cost": 1825}, {"d": "2026-04-04", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 87, "click": 10, "conv": 6, "conv_amt": 511800, "cost": 2175}, {"d": "2026-04-03", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 79, "click": 7, "conv": 3, "conv_amt": 180000, "cost": 1975}, {"d": "2026-04-02", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 101, "click": 5, "conv": 1, "conv_amt": 42000, "cost": 2525}, {"d": "2026-04-01", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 73, "click": 1, "conv": 2, "conv_amt": 208000, "cost": 1825}, {"d": "2026-03-31", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 62, "click": 3, "conv": 0, "conv_amt": 0, "cost": 1550}, {"d": "2026-03-30", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 76, "click": 7, "conv": 3, "conv_amt": 107000, "cost": 1900}, {"d": "2026-03-29", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 63, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1575}, {"d": "2026-03-28", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 71, "click": 4, "conv": 2, "conv_amt": 167000, "cost": 1775}, {"d": "2026-03-27", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 90, "click": 4, "conv": 4, "conv_amt": 312000, "cost": 2250}, {"d": "2026-03-26", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 68, "click": 4, "conv": 4, "conv_amt": 313000, "cost": 1700}, {"d": "2026-03-25", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 62, "click": 2, "conv": 2, "conv_amt": 140000, "cost": 1550}, {"d": "2026-03-24", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 0, "click": 1, "conv": 2, "conv_amt": 166900, "cost": 0}, {"d": "2026-03-23", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 108, "click": 7, "conv": 4, "conv_amt": 123800, "cost": 2700}, {"d": "2026-03-22", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 131, "click": 6, "conv": 2, "conv_amt": 114900, "cost": 3275}, {"d": "2026-03-21", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 88, "click": 4, "conv": 3, "conv_amt": 153000, "cost": 2200}, {"d": "2026-03-20", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 106, "click": 6, "conv": 3, "conv_amt": 221200, "cost": 2650}, {"d": "2026-03-19", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 106, "click": 13, "conv": 4, "conv_amt": 370200, "cost": 2650}, {"d": "2026-03-18", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 88, "click": 7, "conv": 4, "conv_amt": 439500, "cost": 2200}, {"d": "2026-03-17", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 77, "click": 4, "conv": 4, "conv_amt": 357800, "cost": 1925}, {"d": "2026-03-16", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 82, "click": 2, "conv": 7, "conv_amt": 599000, "cost": 2050}, {"d": "2026-03-15", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 112, "click": 8, "conv": 4, "conv_amt": 235800, "cost": 2800}, {"d": "2026-03-14", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 87, "click": 10, "conv": 2, "conv_amt": 109600, "cost": 2175}, {"d": "2026-03-13", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 92, "click": 6, "conv": 3, "conv_amt": 179800, "cost": 2300}, {"d": "2026-03-12", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 85, "click": 9, "conv": 2, "conv_amt": 124300, "cost": 2125}, {"d": "2026-03-11", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 72, "click": 5, "conv": 1, "conv_amt": 23000, "cost": 1800}, {"d": "2026-03-10", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 95, "click": 6, "conv": 2, "conv_amt": 92000, "cost": 2375}, {"d": "2026-03-09", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 128, "click": 3, "conv": 4, "conv_amt": 229800, "cost": 3200}, {"d": "2026-03-08", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 206, "click": 10, "conv": 2, "conv_amt": 0, "cost": 5150}, {"d": "2026-03-07", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 119, "click": 12, "conv": 4, "conv_amt": 0, "cost": 2975}, {"d": "2026-03-06", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 80, "click": 0, "conv": 2, "conv_amt": 0, "cost": 2000}, {"d": "2026-03-05", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 80, "click": 2, "conv": 2, "conv_amt": 0, "cost": 2000}, {"d": "2026-03-04", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 71, "click": 2, "conv": 3, "conv_amt": 0, "cost": 1775}, {"d": "2026-03-03", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 84, "click": 3, "conv": 3, "conv_amt": 0, "cost": 2100}, {"d": "2026-03-02", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 83, "click": 6, "conv": 5, "conv_amt": 0, "cost": 2075}, {"d": "2026-03-01", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 63, "click": 9, "conv": 6, "conv_amt": 0, "cost": 1575}, {"d": "2026-02-28", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 67, "click": 2, "conv": 2, "conv_amt": 0, "cost": 1675}, {"d": "2026-02-27", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 80, "click": 3, "conv": 4, "conv_amt": 0, "cost": 2000}, {"d": "2026-02-26", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 67, "click": 7, "conv": 6, "conv_amt": 0, "cost": 1675}, {"d": "2026-02-25", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 93, "click": 5, "conv": 8, "conv_amt": 0, "cost": 2325}, {"d": "2026-02-24", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 87, "click": 8, "conv": 9, "conv_amt": 0, "cost": 2175}, {"d": "2026-02-23", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 98, "click": 10, "conv": 7, "conv_amt": 0, "cost": 2450}, {"d": "2026-02-22", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 101, "click": 7, "conv": 12, "conv_amt": 0, "cost": 2525}, {"d": "2026-02-21", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 84, "click": 5, "conv": 7, "conv_amt": 0, "cost": 2100}, {"d": "2026-02-20", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 96, "click": 7, "conv": 8, "conv_amt": 0, "cost": 2400}, {"d": "2026-02-19", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 99, "click": 9, "conv": 7, "conv_amt": 0, "cost": 2475}, {"d": "2026-02-18", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 81, "click": 6, "conv": 5, "conv_amt": 0, "cost": 2025}, {"d": "2026-02-17", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 95, "click": 6, "conv": 3, "conv_amt": 0, "cost": 2375}, {"d": "2026-02-16", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 102, "click": 4, "conv": 1, "conv_amt": 0, "cost": 2550}, {"d": "2026-02-15", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 104, "click": 12, "conv": 3, "conv_amt": 0, "cost": 2600}, {"d": "2026-02-14", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 86, "click": 3, "conv": 3, "conv_amt": 0, "cost": 2150}, {"d": "2026-02-13", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 75, "click": 7, "conv": 1, "conv_amt": 0, "cost": 1875}, {"d": "2026-02-12", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 52, "click": 1, "conv": 0, "conv_amt": 0, "cost": 1300}, {"d": "2026-02-11", "t": "자동화", "id": 6971, "n": "첫 구매 유도 260210(리뉴얼)", "recv": 58, "click": 6, "conv": 0, "conv_amt": 0, "cost": 1450}, {"d": "2026-04-07", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 80, "click": 0, "conv": 1, "conv_amt": 69000, "cost": 2000}, {"d": "2026-04-06", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 108, "click": 8, "conv": 1, "conv_amt": 59400, "cost": 2700}, {"d": "2026-04-05", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 50, "click": 5, "conv": 4, "conv_amt": 193400, "cost": 1250}, {"d": "2026-04-04", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 60, "click": 4, "conv": 7, "conv_amt": 527800, "cost": 1500}, {"d": "2026-04-03", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 71, "click": 2, "conv": 0, "conv_amt": 0, "cost": 1775}, {"d": "2026-04-02", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 47, "click": 3, "conv": 5, "conv_amt": 467400, "cost": 1175}, {"d": "2026-04-01", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 60, "click": 2, "conv": 6, "conv_amt": 446000, "cost": 1500}, {"d": "2026-03-31", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 65, "click": 4, "conv": 0, "conv_amt": 0, "cost": 1625}, {"d": "2026-03-30", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 93, "click": 8, "conv": 3, "conv_amt": 246400, "cost": 2325}, {"d": "2026-03-29", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 48, "click": 7, "conv": 4, "conv_amt": 232600, "cost": 1200}, {"d": "2026-03-28", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 75, "click": 1, "conv": 7, "conv_amt": 636800, "cost": 1875}, {"d": "2026-03-27", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 78, "click": 4, "conv": 2, "conv_amt": 145000, "cost": 1950}, {"d": "2026-03-26", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 85, "click": 6, "conv": 4, "conv_amt": 438100, "cost": 2125}, {"d": "2026-03-25", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 63, "click": 7, "conv": 2, "conv_amt": 88900, "cost": 1575}, {"d": "2026-03-24", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 94, "click": 5, "conv": 4, "conv_amt": 299000, "cost": 2350}, {"d": "2026-03-23", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 93, "click": 9, "conv": 3, "conv_amt": 134000, "cost": 2325}, {"d": "2026-03-22", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 70, "click": 6, "conv": 1, "conv_amt": 15600, "cost": 1750}, {"d": "2026-03-21", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 77, "click": 8, "conv": 3, "conv_amt": 180000, "cost": 1925}, {"d": "2026-03-20", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 43, "click": 2, "conv": 1, "conv_amt": 42000, "cost": 1075}, {"d": "2026-03-19", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 57, "click": 2, "conv": 2, "conv_amt": 178800, "cost": 1425}, {"d": "2026-03-18", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 59, "click": 7, "conv": 7, "conv_amt": 548400, "cost": 1475}, {"d": "2026-03-17", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 71, "click": 3, "conv": 5, "conv_amt": 443200, "cost": 1775}, {"d": "2026-03-16", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 80, "click": 7, "conv": 6, "conv_amt": 566400, "cost": 2000}, {"d": "2026-03-15", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 64, "click": 6, "conv": 1, "conv_amt": 42000, "cost": 1600}, {"d": "2026-03-14", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 62, "click": 7, "conv": 3, "conv_amt": 207000, "cost": 1550}, {"d": "2026-03-13", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 65, "click": 13, "conv": 4, "conv_amt": 248800, "cost": 1625}, {"d": "2026-03-12", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 63, "click": 9, "conv": 3, "conv_amt": 180000, "cost": 1575}, {"d": "2026-03-11", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 63, "click": 7, "conv": 4, "conv_amt": 291800, "cost": 1575}, {"d": "2026-03-10", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 110, "click": 7, "conv": 3, "conv_amt": 466600, "cost": 2750}, {"d": "2026-03-09", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 118, "click": 10, "conv": 6, "conv_amt": 340800, "cost": 2950}, {"d": "2026-03-08", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 87, "click": 7, "conv": 1, "conv_amt": 0, "cost": 2175}, {"d": "2026-03-07", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 83, "click": 7, "conv": 3, "conv_amt": 0, "cost": 2075}, {"d": "2026-03-06", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 79, "click": 6, "conv": 2, "conv_amt": 0, "cost": 1975}, {"d": "2026-03-05", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 114, "click": 6, "conv": 5, "conv_amt": 0, "cost": 2850}, {"d": "2026-03-04", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 105, "click": 2, "conv": 3, "conv_amt": 0, "cost": 2625}, {"d": "2026-03-03", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 86, "click": 0, "conv": 4, "conv_amt": 0, "cost": 2150}, {"d": "2026-03-02", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 83, "click": 6, "conv": 7, "conv_amt": 0, "cost": 2075}, {"d": "2026-03-01", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 76, "click": 8, "conv": 5, "conv_amt": 0, "cost": 1900}, {"d": "2026-02-28", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 95, "click": 5, "conv": 5, "conv_amt": 0, "cost": 2375}, {"d": "2026-02-27", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 69, "click": 6, "conv": 3, "conv_amt": 0, "cost": 1725}, {"d": "2026-02-26", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 107, "click": 6, "conv": 5, "conv_amt": 0, "cost": 2675}, {"d": "2026-02-25", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 106, "click": 7, "conv": 7, "conv_amt": 0, "cost": 2650}, {"d": "2026-02-24", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 121, "click": 11, "conv": 9, "conv_amt": 0, "cost": 3025}, {"d": "2026-02-23", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 219, "click": 13, "conv": 8, "conv_amt": 0, "cost": 5475}, {"d": "2026-02-22", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 208, "click": 21, "conv": 9, "conv_amt": 0, "cost": 5200}, {"d": "2026-02-21", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 189, "click": 19, "conv": 8, "conv_amt": 0, "cost": 4725}, {"d": "2026-02-20", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 242, "click": 16, "conv": 7, "conv_amt": 0, "cost": 6050}, {"d": "2026-02-19", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 161, "click": 9, "conv": 14, "conv_amt": 0, "cost": 4025}, {"d": "2026-02-18", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 177, "click": 9, "conv": 12, "conv_amt": 0, "cost": 4425}, {"d": "2026-02-17", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 182, "click": 14, "conv": 2, "conv_amt": 0, "cost": 4550}, {"d": "2026-02-16", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 195, "click": 10, "conv": 3, "conv_amt": 0, "cost": 4875}, {"d": "2026-02-15", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 180, "click": 19, "conv": 1, "conv_amt": 0, "cost": 4500}, {"d": "2026-02-14", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 219, "click": 10, "conv": 2, "conv_amt": 0, "cost": 5475}, {"d": "2026-02-13", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 125, "click": 2, "conv": 2, "conv_amt": 0, "cost": 3125}, {"d": "2026-02-12", "t": "자동화", "id": 6972, "n": "장바구니 구매 유도 260210(리뉴얼)", "recv": 102, "click": 10, "conv": 0, "conv_amt": 0, "cost": 2550}, {"d": "2026-03-24", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 0, "click": 0, "conv": 1, "conv_amt": 104200, "cost": 0}, {"d": "2026-03-23", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 0, "conv": 1, "conv_amt": 98000, "cost": 550}, {"d": "2026-03-22", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 19, "click": 1, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2026-03-21", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 15, "click": 0, "conv": 0, "conv_amt": 0, "cost": 375}, {"d": "2026-03-20", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 20, "click": 1, "conv": 1, "conv_amt": 69000, "cost": 500}, {"d": "2026-03-19", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 19, "click": 2, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2026-03-18", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 26, "click": 4, "conv": 1, "conv_amt": 59600, "cost": 650}, {"d": "2026-03-17", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 2, "conv": 1, "conv_amt": 42000, "cost": 550}, {"d": "2026-03-16", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 39, "click": 2, "conv": 0, "conv_amt": 0, "cost": 975}, {"d": "2026-03-15", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 24, "click": 1, "conv": 0, "conv_amt": 0, "cost": 600}, {"d": "2026-03-14", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 24, "click": 1, "conv": 2, "conv_amt": 209200, "cost": 600}, {"d": "2026-03-13", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 21, "click": 1, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2026-03-12", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 21, "click": 0, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2026-03-11", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 17, "click": 0, "conv": 0, "conv_amt": 0, "cost": 425}, {"d": "2026-03-10", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 18, "click": 1, "conv": 0, "conv_amt": 0, "cost": 450}, {"d": "2026-03-09", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 31, "click": 1, "conv": 0, "conv_amt": 0, "cost": 775}, {"d": "2026-03-08", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 0, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2026-03-07", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 18, "click": 0, "conv": 1, "conv_amt": 0, "cost": 450}, {"d": "2026-03-06", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 24, "click": 2, "conv": 0, "conv_amt": 0, "cost": 600}, {"d": "2026-03-05", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 24, "click": 0, "conv": 0, "conv_amt": 0, "cost": 600}, {"d": "2026-03-04", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 23, "click": 0, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2026-03-03", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 26, "click": 0, "conv": 0, "conv_amt": 0, "cost": 650}, {"d": "2026-03-02", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 40, "click": 4, "conv": 2, "conv_amt": 0, "cost": 1000}, {"d": "2026-03-01", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 36, "click": 0, "conv": 0, "conv_amt": 0, "cost": 900}, {"d": "2026-02-28", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 19, "click": 0, "conv": 0, "conv_amt": 0, "cost": 475}, {"d": "2026-02-27", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 0, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2026-02-26", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 23, "click": 0, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2026-02-25", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 0, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2026-02-24", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 16, "click": 1, "conv": 1, "conv_amt": 0, "cost": 400}, {"d": "2026-02-23", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 24, "click": 1, "conv": 1, "conv_amt": 0, "cost": 600}, {"d": "2026-02-22", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 23, "click": 1, "conv": 2, "conv_amt": 0, "cost": 575}, {"d": "2026-02-21", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 26, "click": 2, "conv": 3, "conv_amt": 0, "cost": 650}, {"d": "2026-02-20", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 21, "click": 1, "conv": 0, "conv_amt": 0, "cost": 525}, {"d": "2026-02-19", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 2, "conv": 1, "conv_amt": 0, "cost": 550}, {"d": "2026-02-18", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 0, "conv": 1, "conv_amt": 0, "cost": 550}, {"d": "2026-02-17", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 25, "click": 1, "conv": 1, "conv_amt": 0, "cost": 625}, {"d": "2026-02-16", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 33, "click": 2, "conv": 0, "conv_amt": 0, "cost": 825}, {"d": "2026-02-15", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 27, "click": 0, "conv": 0, "conv_amt": 0, "cost": 675}, {"d": "2026-02-14", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 22, "click": 0, "conv": 0, "conv_amt": 0, "cost": 550}, {"d": "2026-02-13", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 25, "click": 0, "conv": 0, "conv_amt": 0, "cost": 625}, {"d": "2026-02-12", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 20, "click": 0, "conv": 0, "conv_amt": 0, "cost": 500}, {"d": "2026-02-11", "t": "자동화", "id": 6973, "n": "재구매 유도 260210(리뉴얼)", "recv": 23, "click": 0, "conv": 0, "conv_amt": 0, "cost": 575}, {"d": "2026-04-07", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 52, "click": 0, "conv": 0, "conv_amt": 0, "cost": 1300}, {"d": "2026-04-06", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 41, "click": 3, "conv": 1, "conv_amt": 23000, "cost": 1025}, {"d": "2026-04-05", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 54, "click": 0, "conv": 1, "conv_amt": 69000, "cost": 1350}, {"d": "2026-04-04", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 49, "click": 0, "conv": 1, "conv_amt": 69000, "cost": 1225}, {"d": "2026-04-03", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 57, "click": 5, "conv": 2, "conv_amt": 138000, "cost": 1425}, {"d": "2026-04-02", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 75, "click": 1, "conv": 0, "conv_amt": 0, "cost": 1875}, {"d": "2026-04-01", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 40, "click": 0, "conv": 2, "conv_amt": 149200, "cost": 1000}, {"d": "2026-03-31", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 51, "click": 2, "conv": 1, "conv_amt": 69000, "cost": 1275}, {"d": "2026-03-30", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 46, "click": 3, "conv": 1, "conv_amt": 42000, "cost": 1150}, {"d": "2026-03-29", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 40, "click": 1, "conv": 2, "conv_amt": 101600, "cost": 1000}, {"d": "2026-03-28", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 48, "click": 1, "conv": 0, "conv_amt": 0, "cost": 1200}, {"d": "2026-03-27", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 43, "click": 1, "conv": 0, "conv_amt": 0, "cost": 1075}, {"d": "2026-03-26", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 49, "click": 7, "conv": 1, "conv_amt": 69000, "cost": 1225}, {"d": "2026-03-25", "t": "자동화", "id": 7904, "n": "재구매 유도 (60일) 260323", "recv": 44, "click": 0, "conv": 0, "conv_amt": 0, "cost": 1100}];
+
+// 채널/레이아웃 매핑 (임의)
+const CAMPAIGN_META = {
+  3249:{ch:'친구톡',ly:'이미지형'}, 3780:{ch:'친구톡',ly:'이미지형'}, 3781:{ch:'친구톡',ly:'이미지형'},
+  3782:{ch:'친구톡',ly:'이미지형'}, 3791:{ch:'친구톡',ly:'이미지형'}, 4187:{ch:'친구톡',ly:'텍스트형'},
+  4632:{ch:'친구톡',ly:'와이드이미지형'}, 4909:{ch:'친구톡',ly:'와이드이미지형'}, 4938:{ch:'친구톡',ly:'텍스트형'},
+  5168:{ch:'문자',ly:'텍스트형'}, 5514:{ch:'친구톡',ly:'와이드이미지형'}, 5971:{ch:'친구톡',ly:'와이드이미지형'},
+  6529:{ch:'친구톡',ly:'이미지형'}, 6661:{ch:'친구톡',ly:'이미지형'}, 6887:{ch:'친구톡',ly:'와이드리스트형'},
+  7055:{ch:'친구톡',ly:'와이드이미지형'}, 7354:{ch:'친구톡',ly:'텍스트형'}, 7896:{ch:'친구톡',ly:'텍스트형'},
+  7925:{ch:'친구톡',ly:'와이드이미지형'}, 8261:{ch:'친구톡',ly:'텍스트형'},
+  3364:{ch:'친구톡',ly:'이미지형'}, 3368:{ch:'친구톡',ly:'텍스트형'}, 4161:{ch:'친구톡',ly:'텍스트형'},
+  6971:{ch:'친구톡',ly:'이미지형'}, 6972:{ch:'친구톡',ly:'이미지형'}, 6973:{ch:'친구톡',ly:'텍스트형'},
+  7904:{ch:'친구톡',ly:'텍스트형'}
+};
+RAW_DATA.forEach(r => { const m = CAMPAIGN_META[r.id] || {ch:'친구톡',ly:'텍스트형'}; r.ch = m.ch; r.ly = m.ly; });
+
+const COLORS = ['#2563EB','#F59E0B','#10B981','#EF4444','#8B5CF6','#EC4899','#06B6D4','#84CC16'];
+let checkedIds = new Set();
+let currentSortDir = 'desc';
+let selectedCampaignId = null;
+
+function sortByCol(col) {
+  const sel = document.getElementById('sortSelect');
+  if (sel.value === col) {
+    currentSortDir = currentSortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    sel.value = col;
+    currentSortDir = 'desc';
+  }
+  renderTable();
+}
+
+function getChecked(id) {
+  return Array.from(document.querySelectorAll(`#${id} input[type=checkbox]`)).filter(c=>c.checked).map(c=>c.parentElement.textContent.trim());
+}
+
+function getFilteredData() {
+  const period = document.getElementById('periodFilter').value;
+  const types = getChecked('ddType');
+  const channels = getChecked('ddChannel');
+  const layouts = getChecked('ddLayout');
+
+  let data = RAW_DATA.filter(r => types.includes(r.t) && channels.includes(r.ch) && layouts.includes(r.ly));
+
+  if (period !== 'all') {
+    const days = parseInt(period);
+    const now = new Date('2026-04-07');
+    const cutoff = new Date(now - days * 86400000);
+    data = data.filter(r => new Date(r.d) >= cutoff);
+  }
+  return data;
+}
+
+function aggregateByCampaign(data) {
+  const map = {};
+  data.forEach(r => {
+    const key = r.id;
+    if (!map[key]) map[key] = { id:r.id, name:r.n, type:r.t, recv:0, click:0, conv:0, conv_amt:0, cost:0 };
+    map[key].recv += r.recv;
+    map[key].click += r.click;
+    map[key].conv += r.conv;
+    map[key].conv_amt += r.conv_amt;
+    map[key].cost += r.cost;
+  });
+  return Object.values(map).filter(c => c.recv > 0).map(c => ({
+    ...c,
+    ctr: c.recv > 0 ? (c.click / c.recv * 100) : 0,
+    cvr: c.recv > 0 ? (c.conv / c.recv * 100) : 0,
+    roas: c.cost > 0 ? (c.conv_amt / c.cost * 100) : 0,
+  }));
+}
+
+function getPrevPeriodData() {
+  const period = document.getElementById('periodFilter').value;
+  if (period === 'all') return null;
+  const days = parseInt(period);
+  const now = new Date('2026-04-07');
+  const cutoff = new Date(now - days * 86400000);
+  const prevCutoff = new Date(cutoff - days * 86400000);
+  const typeChecks = document.querySelectorAll('#ddType input[type=checkbox]');
+  const types = [];
+  if (typeChecks[0].checked) types.push('자동화');
+  if (typeChecks[1].checked) types.push('일회성');
+  return RAW_DATA.filter(r => types.includes(r.t) && new Date(r.d) >= prevCutoff && new Date(r.d) < cutoff);
+}
+
+function deltaHtml(cur, prev) {
+  if (prev === 0 || prev === null || prev === undefined) return '';
+  const pct = ((cur - prev) / Math.abs(prev) * 100).toFixed(1);
+  const color = pct >= 0 ? '#16a34a' : '#ef4444';
+  const arrow = pct >= 0 ? '▲' : '▼';
+  return `<span style="font-size:10px;color:${color};">${arrow}${Math.abs(pct)}%</span>`;
+}
+
+function renderScorecards() {
+  const data = getFilteredData();
+  const totals = { cost:0, conv_amt:0 };
+  data.forEach(r => { totals.cost += r.cost; totals.conv_amt += r.conv_amt; });
+  const roas = totals.cost > 0 ? (totals.conv_amt / totals.cost * 100) : 0;
+  const roasDisplay = Math.round(roas).toLocaleString();
+
+  const prevData = getPrevPeriodData();
+  let prev = { cost:0, conv_amt:0, roas:0 };
+  if (prevData) {
+    prevData.forEach(r => { prev.cost += r.cost; prev.conv_amt += r.conv_amt; });
+    prev.roas = prev.cost > 0 ? (prev.conv_amt / prev.cost * 100) : 0;
+  }
+  const hasPrev = prevData && (prev.cost > 0 || prev.conv_amt > 0);
+
+  function scDelta(cur, prv, unit) {
+    if (!hasPrev) return '';
+    const diff = cur - prv;
+    const pct = prv > 0 ? ((diff / Math.abs(prv)) * 100).toFixed(1) : '—';
+    const color = diff >= 0 ? '#16a34a' : '#ef4444';
+    const sign = diff >= 0 ? '+' : '';
+    return `<div style="font-size:12px;color:${color};font-weight:600;margin-top:6px;">${sign}${Math.round(diff).toLocaleString()}${unit} (${diff >= 0 ? '▲' : '▼'}${Math.abs(pct)}%)</div>`;
+  }
+
+  document.getElementById('scorecards').innerHTML = `
+    <div class="scorecard"><div class="scorecard-label">발송 비용</div><div class="scorecard-value">${totals.cost.toLocaleString()}원</div>${scDelta(totals.cost, prev.cost, '원')}</div>
+    <div class="scorecard"><div class="scorecard-label">전환 금액</div><div class="scorecard-value">${totals.conv_amt.toLocaleString()}원</div>${scDelta(totals.conv_amt, prev.conv_amt, '원')}</div>
+    <div class="scorecard"><div class="scorecard-label">ROAS</div><div class="scorecard-value">${roasDisplay}%</div>${scDelta(roas, prev.roas, '%')}</div>
+  `;
+}
+
+function renderTable() {
+  const data = getFilteredData();
+  const campaigns = aggregateByCampaign(data);
+  const sortKey = document.getElementById('sortSelect').value;
+  const dir = currentSortDir === 'desc' ? -1 : 1;
+  campaigns.sort((a,b) => (a[sortKey] - b[sortKey]) * dir);
+
+  // prev period for delta
+  const prevData = getPrevPeriodData();
+  let prevMap = {};
+  if (prevData) {
+    aggregateByCampaign(prevData).forEach(c => prevMap[c.id] = c);
+  }
+
+  if (checkedIds.size === 0) {
+    campaigns.slice(0,3).forEach(c => checkedIds.add(c.id));
+  }
+
+  const cols = ['recv','ctr','cvr','cost','conv_amt','roas'];
+  const colNames = {recv:'수신 성공',ctr:'클릭률',cvr:'전환율',cost:'발송 비용',conv_amt:'전환 금액',roas:'ROAS'};
+
+  // 전체 ROAS + 영향도 계산
+  const allData = getFilteredData();
+  const totalCost = allData.reduce((s,r) => s + r.cost, 0);
+  const totalConvAmt = allData.reduce((s,r) => s + r.conv_amt, 0);
+  const weightedRoas = totalCost > 0 ? (totalConvAmt / totalCost * 100) : 0;
+
+  // 각 캠페인 영향도: 이 캠페인 없었으면 전체 ROAS가 얼마였을까
+  campaigns.forEach(c => {
+    const withoutCost = totalCost - c.cost;
+    const withoutConvAmt = totalConvAmt - c.conv_amt;
+    const roasWithout = withoutCost > 0 ? (withoutConvAmt / withoutCost * 100) : 0;
+    c.impact = weightedRoas - roasWithout; // + = 올리는 놈, - = 깎는 놈
+  });
+
+  let headHtml = '<tr><th style="width:30px"></th><th>유형</th><th style="width:20%">캠페인명</th>';
+  cols.forEach(c => {
+    const isSort = c === sortKey;
+    const arrow = isSort ? (currentSortDir === 'desc' ? ' ↓' : ' ↑') : '';
+    headHtml += `<th class="right" style="${isSort?'color:#4F46E5;font-weight:700;':''}cursor:pointer;" onclick="sortByCol('${c}')">${colNames[c]}${arrow}</th>`;
+  });
+  headHtml += '</tr>';
+  document.getElementById('tableHead').innerHTML = headHtml;
+
+  let bodyHtml = '';
+  campaigns.forEach(r => {
+    const checked = checkedIds.has(r.id) ? 'checked' : '';
+    const prev = prevMap[r.id];
+    const bg = '';
+    bodyHtml += `<tr style="${bg}cursor:pointer;" onclick="openPanel(${r.id})">`;
+    bodyHtml += `<td><input type="checkbox" ${checked} onclick="event.stopPropagation();toggleCheck(${r.id},this.checked)" style="accent-color:#4F46E5;"></td>`;
+    bodyHtml += `<td style="font-size:11px;color:#888;">${r.type}</td>`;
+    bodyHtml += `<td>${r.name}</td>`;
+    cols.forEach(c => {
+      const isSort = c === sortKey;
+      let val;
+      if (c==='ctr') { val = `${r[c].toFixed(1)}% <span style="color:#999;">(${r.click.toLocaleString()})</span>`; }
+      else if (c==='cvr') { val = `${r[c].toFixed(1)}% <span style="color:#999;">(${r.conv.toLocaleString()})</span>`; }
+      else if (c==='roas') {
+        const roasColor = r[c] >= weightedRoas ? '#16a34a' : '#ef4444';
+        val = `<span style="color:${roasColor};font-weight:700;">${Math.round(r[c]).toLocaleString()}%</span>`;
+      }
+      else if (c==='conv_amt'||c==='cost') val = r[c].toLocaleString()+'원';
+      else val = r[c].toLocaleString();
+      bodyHtml += `<td class="right">${val}</td>`;
+    });
+    bodyHtml += '</tr>';
+  });
+  document.getElementById('tableBody').innerHTML = bodyHtml;
+  document.getElementById('tableCount').textContent = `${campaigns.length}개 캠페인 · 전체 ROAS ${Math.round(weightedRoas).toLocaleString()}%`;
+}
+
+function renderChart() {
+  const data = getFilteredData();
+  const metric = 'roas';
+
+  const dates = [...new Set(data.map(r=>r.d))].sort();
+  if (dates.length === 0) return;
+
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 440;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.scale(2,2);
+
+  const w = canvas.offsetWidth, h = 220;
+  const pad = {t:20,r:20,b:30,l:60};
+
+  // 일별 전체 데이터
+  const byDate = {};
+  data.forEach(r => {
+    if (!byDate[r.d]) byDate[r.d] = {recv:0, click:0, conv:0, cost:0, conv_amt:0};
+    byDate[r.d].recv += r.recv;
+    byDate[r.d].click += r.click;
+    byDate[r.d].conv += r.conv;
+    byDate[r.d].cost += r.cost;
+    byDate[r.d].conv_amt += r.conv_amt;
+  });
+
+  let dailyValues;
+  if (metric === 'roas') {
+    dailyValues = dates.map(d => byDate[d] && byDate[d].cost > 0 ? (byDate[d].conv_amt / byDate[d].cost * 100) : 0);
+  } else {
+    dailyValues = dates.map(d => byDate[d] ? byDate[d][metric] || 0 : 0);
+  }
+
+  // 이동평균
+  const maWindow = Math.min(7, Math.max(3, Math.floor(dates.length / 3)));
+  function movingAvg(vals) {
+    return vals.map((v, i) => {
+      const start = Math.max(0, i - maWindow + 1);
+      let sum = 0, count = 0;
+      for (let j = start; j <= i; j++) { sum += vals[j]; count++; }
+      return sum / count;
+    });
+  }
+  const maValues = movingAvg(dailyValues);
+  const maMax = Math.max(...maValues, 1);
+
+  // 그리드
+  ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 0.5;
+  for (let i = 0; i < 4; i++) {
+    const y = pad.t + (h - pad.t - pad.b) * i / 3;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maMax * (3 - i) / 3).toLocaleString(), pad.l - 8, y + 4);
+  }
+
+  // X축
+  const step = Math.max(1, Math.floor(dates.length / 5));
+  ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  dates.forEach((d, i) => {
+    if (i % step === 0) {
+      const x = pad.l + (w - pad.l - pad.r) * i / (dates.length - 1 || 1);
+      ctx.fillText(d.slice(5), x, h - 5);
+    }
+  });
+
+  const chartH = h - pad.t - pad.b;
+
+  // 전체 영역 채우기
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t + chartH);
+  maValues.forEach((v, i) => {
+    const x = pad.l + (w - pad.l - pad.r) * i / (dates.length - 1 || 1);
+    const y = pad.t + chartH * (1 - v / maMax);
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.l + (w - pad.l - pad.r), pad.t + chartH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(79, 70, 229, 0.08)';
+  ctx.fill();
+
+  // 전체 추세선
+  ctx.strokeStyle = '#4F46E5';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  maValues.forEach((v, i) => {
+    const x = pad.l + (w - pad.l - pad.r) * i / (dates.length - 1 || 1);
+    const y = pad.t + chartH * (1 - v / maMax);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // 체크된 캠페인들 겹침
+  const campColors = ['#F59E0B','#EC4899','#06B6D4','#8B5CF6','#EF4444','#14B8A6'];
+  let legendHtml = '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:3px;background:#4F46E5;border-radius:1px;"></span>전체</span>';
+  let colorIdx = 0;
+
+  checkedIds.forEach(campId => {
+    const campData = data.filter(r => r.id === campId);
+    if (campData.length === 0) return;
+
+    const cByDate = {};
+    campData.forEach(r => {
+      if (!cByDate[r.d]) cByDate[r.d] = {cost:0, conv_amt:0};
+      cByDate[r.d].cost += r.cost;
+      cByDate[r.d].conv_amt += r.conv_amt;
+    });
+
+    // 데이터 있는 날짜만 추출하여 그리기 (일회성은 1일치만 있을 수 있음)
+    const campPoints = [];
+    dates.forEach((d, i) => {
+      if (cByDate[d] && cByDate[d].cost > 0) {
+        const roas = cByDate[d].conv_amt / cByDate[d].cost * 100;
+        const x = pad.l + (w - pad.l - pad.r) * i / (dates.length - 1 || 1);
+        const y = pad.t + chartH * (1 - roas / maMax);
+        campPoints.push({x, y, roas});
+      }
+    });
+
+    const color = campColors[colorIdx % campColors.length];
+    colorIdx++;
+
+    if (campPoints.length === 1) {
+      // 데이터 1개면 점으로 표시
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(campPoints[0].x, campPoints[0].y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // 여러 날이면 선으로 연결
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      campPoints.forEach((p, i) => {
+        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    const campName = campData[0].n;
+    legendHtml += `<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:0;border-top:2px dashed ${color};"></span>${campName}</span>`;
+  });
+
+  document.getElementById('chartLegend').innerHTML = legendHtml;
+  document.getElementById('chartTitle').textContent = checkedIds.size > 0 ? 'ROAS 추이 — 캠페인 비교' : '전체 ROAS 추이';
+}
+
+function toggleCheck(id, checked) {
+  if (checked) checkedIds.add(id); else checkedIds.delete(id);
+  renderChart();
+}
+
+function openPanel(id) {
+  selectedCampaignId = id;
+  renderChart();
+  renderTable();
+  const data = getFilteredData();
+  const campaigns = aggregateByCampaign(data);
+  const c = campaigns.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('panelType').textContent = c.type;
+  document.getElementById('panelName').textContent = c.name;
+
+  // 핵심 지표 한 줄
+
+  // 소재 미리보기 (임의 데이터)
+  const previews = {
+    '장바구니 구매 유도': {title:'(광고) @리브비', body:'장바구니에 담아두신 상품이 기다리고 있어요! 놓치기 전에 확인해보세요.'},
+    '첫 구매 유도': {title:'(광고) @리브비', body:'첫 구매 고객님을 위한 특별 혜택을 준비했어요. 지금 바로 확인하세요!'},
+    '재구매 유도': {title:'(광고) @리브비', body:'지난번 구매하신 상품, 다시 만나보시겠어요? 재구매 할인 혜택을 드려요.'},
+  };
+  const defaultPreview = {title:'(광고) @리브비', body: c.name + ' 캠페인 소재입니다. 지금 확인해보세요!'};
+  const preview = Object.entries(previews).find(([k]) => c.name.includes(k));
+  const pv = preview ? preview[1] : defaultPreview;
+  document.getElementById('panelPreviewTitle').textContent = pv.title;
+  document.getElementById('panelPreviewBody').textContent = pv.body;
+
+  // 발송 조건 (임의 데이터 — 유형별 다름)
+  if (c.type === '자동화') {
+    document.getElementById('panelCondition').innerHTML = `
+      <div style="padding:14px 16px;border:1px solid #e5e5e5;border-radius:10px;">
+        <div style="font-size:11px;color:#888;">타겟</div>
+        <div style="font-size:13px;font-weight:600;margin-top:4px;">장바구니 담기 3시간 후, 장바구니에 상품이 있을 때</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid #e5e5e5;border-radius:10px;">
+        <div style="font-size:11px;color:#888;">발송 스케줄</div>
+        <div style="font-size:13px;font-weight:600;margin-top:4px;">매일 오전 10:00</div>
+      </div>`;
+  } else {
+    document.getElementById('panelCondition').innerHTML = `
+      <div style="padding:14px 16px;border:1px solid #e5e5e5;border-radius:10px;">
+        <div style="font-size:11px;color:#888;">타겟</div>
+        <div style="font-size:13px;font-weight:600;margin-top:4px;">최근 30일 구매 이력 없음 · 장바구니 1건 이상 · VIP 등급</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid #e5e5e5;border-radius:10px;">
+        <div style="font-size:11px;color:#888;">발송 스케줄</div>
+        <div style="font-size:13px;font-weight:600;margin-top:4px;">2026.04.03 오후 2:00</div>
+      </div>`;
+  }
+  document.getElementById('panel').classList.add('show');
+}
+
+function toggleDropdown(id) {
+  document.querySelectorAll('.dropdown-menu').forEach(m => { if(m.id!==id) m.classList.remove('show'); });
+  document.getElementById(id).classList.toggle('show');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-wrap')) document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+});
+
+// 체크박스 변경 시 버튼 텍스트 업데이트
+document.querySelectorAll('.dropdown-menu').forEach(menu => {
+  menu.addEventListener('change', function() {
+    const btn = this.previousElementSibling;
+    const checks = this.querySelectorAll('input[type="checkbox"]');
+    const checked = Array.from(checks).filter(c => c.checked);
+    if (checked.length === checks.length || checked.length === 0) {
+      btn.innerHTML = '전체 <span style="font-size:10px;color:#999;">▼</span>';
+    } else {
+      const names = checked.map(c => c.parentElement.textContent.trim());
+      btn.innerHTML = names.join(', ') + ' <span style="font-size:10px;color:#999;">▼</span>';
+    }
+  });
+});
+
+function refresh() {
+  checkedIds.clear();
+  renderScorecards();
+  renderTable();
+  renderChart();
+}
+
+refresh();
+</script>
+</body>
+</html>
