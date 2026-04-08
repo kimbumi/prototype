@@ -174,71 +174,6 @@
   .mo-cn { background: #f4f4f5; color: #71717a; border: none; }
   .mo-setup { background: #7c3aed; color: #fff; border: none; }
 
-  /* ===== Full Page Detail View ===== */
-  .detail-view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-  .detail-view.show { display: flex; }
-
-  .detail-hdr { padding: 20px 32px; background: #fff; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: center; }
-  .detail-hdr-left { display: flex; align-items: center; gap: 14px; }
-  .detail-back { font-size: 18px; color: #a1a1aa; cursor: pointer; border: none; background: none; padding: 4px 8px; border-radius: 6px; }
-  .detail-back:hover { background: #f4f4f5; color: #71717a; }
-  .detail-name { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
-  .detail-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-left: 10px; vertical-align: middle; }
-  .detail-badge.active { background: #ecfdf5; color: #059669; }
-  .detail-badge.inactive { background: #fef2f2; color: #dc2626; }
-  .detail-hdr-right { display: flex; gap: 8px; }
-  .btn-sm { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
-  .btn-sm.danger { background: #fff; color: #ef4444; border: 1px solid #fecaca; }
-  .btn-sm.outline { background: #fff; color: #18181b; border: 1px solid #18181b; }
-  .btn-sm.settings { background: #f4f4f5; color: #71717a; }
-
-  .detail-toolbar { padding: 16px 32px 0; background: #fff; display: flex; justify-content: space-between; align-items: flex-end; }
-  .detail-tabs { display: flex; gap: 0; }
-  .detail-tab { padding: 10px 18px; font-size: 14px; font-weight: 500; color: #a1a1aa; cursor: pointer; border-bottom: 2px solid transparent; }
-  .detail-tab.active { color: #18181b; font-weight: 600; border-bottom-color: #18181b; }
-  .detail-toolbar-line { height: 1px; background: #e4e4e7; }
-
-  .detail-content { flex: 1; overflow-y: auto; padding: 24px 32px; background: #f9f9fb; }
-
-  /* Detail Scorecards */
-  .d-sc-row { display: flex; gap: 12px; margin-bottom: 24px; }
-  .d-sc { flex: 1; background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; padding: 20px 22px; }
-  .d-sc.wide { flex: 2; }
-  .d-sc-label { font-size: 12px; color: #a1a1aa; margin-bottom: 6px; }
-  .d-sc-val { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-  .d-sc-unit { font-size: 14px; font-weight: 500; color: #a1a1aa; }
-  .d-sc-sub { font-size: 12px; color: #a1a1aa; margin-top: 6px; }
-
-  /* Detail two column */
-  .d-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
-  /* Detail card */
-  .d-card { background: #fff; border: 1px solid #e4e4e7; border-radius: 14px; padding: 22px; }
-  .d-card-title { font-size: 13px; font-weight: 600; color: #a1a1aa; margin-bottom: 14px; }
-
-  /* Detail settings card */
-  .d-set-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
-  .d-set-row + .d-set-row { border-top: 1px solid #f4f4f5; }
-  .d-set-label { font-size: 13px; color: #71717a; }
-  .d-set-val { font-size: 14px; font-weight: 600; }
-  .d-set-note { font-size: 12px; color: #a1a1aa; margin-top: 10px; padding: 10px 12px; background: #fafafa; border-radius: 8px; line-height: 1.4; }
-
-  /* Detail history table */
-  .d-hist table { width: 100%; border-collapse: collapse; }
-  .d-hist th { text-align: left; padding: 12px 16px; font-size: 12px; color: #a1a1aa; font-weight: 500; border-bottom: 1px solid #e4e4e7; }
-  .d-hist th:last-child { text-align: right; }
-  .d-hist td { padding: 14px 16px; font-size: 13px; color: #3f3f46; border-bottom: 1px solid #f4f4f5; }
-  .d-hist td:last-child { text-align: right; }
-  .d-hist tr:hover { background: #fafafa; }
-  .d-hist .ok { color: #059669; font-weight: 500; }
-  .d-hist .fail { color: #dc2626; font-weight: 500; }
-  .d-hist-filter { display: flex; gap: 4px; margin-bottom: 16px; }
-  .d-hist-f { padding: 6px 14px; border-radius: 16px; font-size: 12px; cursor: pointer; border: none; background: #f4f4f5; font-family: inherit; color: #71717a; font-weight: 500; }
-  .d-hist-f.active { background: #18181b; color: #fff; }
-  .d-hist-page { display: flex; justify-content: center; gap: 4px; margin-top: 20px; }
-  .d-hist-page span { padding: 7px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: #71717a; }
-  .d-hist-page span.active { background: #18181b; color: #fff; }
-
   .hidden { display: none !important; }
 </style>
 </head>
@@ -319,148 +254,6 @@
           <div class="preset-right"><span class="preset-stat muted" id="ps2">미사용</span><span class="tgl off"></span></div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ===== Full Page Detail View (활성/비활성 시) ===== -->
-  <div class="detail-view" id="detailView">
-    <div class="detail-hdr">
-      <div class="detail-hdr-left">
-        <button class="detail-back" title="목록으로" onclick="closeDetail()">✕</button>
-        <div>
-          <span class="detail-name">쿠폰 만료 안내</span>
-          <span class="detail-badge active" id="detailBadge">활성</span>
-        </div>
-      </div>
-      <div class="detail-hdr-right">
-        <button class="btn-sm settings" onclick="openSettingsPanel()">상세 설정</button>
-        <button class="btn-sm danger" id="detailAction">비활성화</button>
-      </div>
-    </div>
-
-    <div class="detail-toolbar">
-      <div class="detail-tabs">
-        <div class="detail-tab active" onclick="dTab('summary',this)">캠페인 요약</div>
-        <div class="detail-tab" onclick="dTab('history',this)">발송 목록</div>
-      </div>
-      <select class="period-sel" style="margin-bottom:10px;">
-        <option>오늘</option><option>최근 7일</option><option selected>최근 14일</option><option>최근 30일</option><option>이번 달</option><option>지난 달</option><option>전체 기간</option>
-      </select>
-    </div>
-    <div class="detail-toolbar-line"></div>
-
-    <div class="detail-content">
-
-      <!-- 캠페인 요약 탭 -->
-      <div id="dTabSum">
-        <div class="d-sc-row">
-          <div class="d-sc">
-            <div class="d-sc-label">발송 시도</div>
-            <div class="d-sc-val">1,580<span class="d-sc-unit">건</span></div>
-          </div>
-          <div class="d-sc">
-            <div class="d-sc-label">수신 성공</div>
-            <div class="d-sc-val">1,240<span class="d-sc-unit">건</span> <span class="d-sc-unit">(78.5%)</span></div>
-          </div>
-          <div class="d-sc wide">
-            <div class="d-sc-label">발송 비용</div>
-            <div class="d-sc-val">152,300<span class="d-sc-unit">원</span></div>
-            <div class="d-sc-sub">알림톡 900건 · 대체문자 340건</div>
-          </div>
-        </div>
-
-        <!-- 캠페인 내용 -->
-        <div style="margin-top:24px;">
-          <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;">캠페인 내용</h3>
-
-          <!-- 미리보기 -->
-          <div class="d-card" style="margin-bottom:12px;">
-            <div class="d-card-title">메세지</div>
-            <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;">
-              <button class="prev-tab active" onclick="dPrevTab('at',this)">알림톡</button>
-              <button class="prev-tab" onclick="dPrevTab('sms',this)">대체 문자 미리보기</button>
-            </div>
-            <div id="dPrevAt" style="display:flex;justify-content:center;">
-              <div class="kakao" style="max-width:320px;width:100%;">
-                <div class="kakao-in">
-                  <p>안녕하세요 <span class="v">#{{고객 이름}}</span>님.</p>
-                  <p><span class="v">#{{브랜드명}}</span>입니다.</p>
-                  <p style="margin-top:8px;">보유하신 쿠폰이 곧 소멸될 예정입니다.<br>유효기간이 지나면 사용할 수 없습니다.<br>마이페이지에서 확인해 보세요.</p>
-                  <div class="kakao-hr"></div>
-                  <div class="kakao-det">
-                    <p>[ 소멸 예정 쿠폰 ]</p>
-                    <p>■ 쿠폰명 : <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
-                    <p>■ 만료일 : <span class="v">#{{소멸 예정일}}</span></p>
-                  </div>
-                </div>
-                <div class="kakao-btns"><a>채널 추가</a><a>마이페이지</a></div>
-              </div>
-            </div>
-            <div id="dPrevSms" class="hidden" style="display:none;justify-content:center;">
-              <div class="sms-bub" style="max-width:320px;width:100%;">
-                <p>[<span class="v">#{{브랜드명}}</span>]</p>
-                <p style="margin-top:6px;">보유하신 쿠폰이 곧 소멸될 예정입니다.</p>
-                <p style="margin-top:4px;">■ 쿠폰명: <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
-                <p>■ 만료일: <span class="v">#{{소멸 예정일}}</span></p>
-                <p style="margin-top:8px;color:#7c3aed;font-weight:500;">▶ 마이페이지에서 확인하기</p>
-                <p style="margin-top:10px;font-size:11px;color:#a1a1aa;">무료수신거부 080-XXX-XXXX</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 발송 설정 — 사이드 패널과 동일한 카드 형태 -->
-          <div class="d-card" style="margin-bottom:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-size:11px;color:#a1a1aa;">발송 설정</div>
-                <div style="font-size:14px;font-weight:600;margin-top:4px;">쿠폰 만료 3일 전, 오전 10시에 발송</div>
-              </div>
-              <button style="padding:7px 14px;border:1px solid #e4e4e7;border-radius:8px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;color:#71717a;" onclick="openMo('settings')">수정하기</button>
-            </div>
-          </div>
-
-          <!-- 대체 문자 — 사이드 패널과 동일한 카드 형태 -->
-          <div class="d-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-size:11px;color:#a1a1aa;">대체 문자</div>
-                <div style="font-size:14px;font-weight:600;margin-top:4px;">발송 실패 시 대체 문자 발송</div>
-              </div>
-              <span class="tgl on"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 발송 목록 탭 -->
-      <div id="dTabHist" class="hidden">
-        <div class="d-card d-hist">
-          <div class="d-hist-filter">
-            <button class="d-hist-f active">전체</button>
-            <button class="d-hist-f">성공</button>
-            <button class="d-hist-f">실패</button>
-          </div>
-          <table>
-            <thead><tr><th>고객 아이디</th><th>이름</th><th>핸드폰 번호</th><th>발송</th><th>채널</th><th>수신</th></tr></thead>
-            <tbody>
-              <tr><td>user001</td><td>김**</td><td>010-****-1234</td><td>2026.04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-              <tr><td>user002</td><td>이**</td><td>010-****-5678</td><td>2026.04.05 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
-              <tr><td>user003</td><td>박**</td><td>010-****-9012</td><td>2026.04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-              <tr><td>user004</td><td>최**</td><td>010-****-3456</td><td>2026.04.04 10:00</td><td>알림톡</td><td class="fail">실패</td></tr>
-              <tr><td>user005</td><td>정**</td><td>010-****-7890</td><td>2026.04.04 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
-              <tr><td>user006</td><td>한**</td><td>010-****-2345</td><td>2026.04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-              <tr><td>user007</td><td>윤**</td><td>010-****-6789</td><td>2026.04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-              <tr><td>user008</td><td>조**</td><td>010-****-0123</td><td>2026.04.02 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
-              <tr><td>user009</td><td>서**</td><td>010-****-4567</td><td>2026.04.02 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-              <tr><td>user010</td><td>강**</td><td>010-****-8901</td><td>2026.04.01 10:00</td><td>알림톡</td><td class="fail">실패</td></tr>
-            </tbody>
-          </table>
-          <div class="d-hist-page">
-            <span class="active">1</span><span>2</span><span>3</span><span>4</span><span>→</span>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -565,16 +358,14 @@
           <button class="hist-f-btn">실패</button>
         </div>
         <table>
-          <thead><tr><th>수신자</th><th>발송 시간</th><th>채널</th><th>상태</th></tr></thead>
+          <thead><tr><th>고객아이디</th><th>이름</th><th>핸드폰 번호</th><th>발송</th><th>채널</th><th>수신 상태</th></tr></thead>
           <tbody>
-            <tr><td>김**</td><td>04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-            <tr><td>이**</td><td>04.05 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
-            <tr><td>박**</td><td>04.05 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-            <tr><td>최**</td><td>04.04 10:00</td><td>알림톡</td><td class="fail">실패</td></tr>
-            <tr><td>정**</td><td>04.04 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
-            <tr><td>한**</td><td>04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-            <tr><td>윤**</td><td>04.03 10:00</td><td>알림톡</td><td class="ok">성공</td></tr>
-            <tr><td>조**</td><td>04.02 10:00</td><td>대체문자</td><td class="ok">성공</td></tr>
+            <tr><td>example01</td><td>이솜</td><td>010-****-1111</td><td>04.05 10:00</td><td>알림톡</td><td class="ok">성공 04.05 10:00</td></tr>
+            <tr><td>example02</td><td>홍길동</td><td>010-****-1112</td><td>04.05 10:00</td><td>문자</td><td class="ok">성공 04.05 10:00</td></tr>
+            <tr><td>example03</td><td>박인정</td><td>010-****-1113</td><td>04.05 10:00</td><td>문자</td><td>발송중</td></tr>
+            <tr><td>example04</td><td>김민지</td><td>010-****-1114</td><td>04.04 10:00</td><td>알림톡</td><td class="fail">실패 (실패 사유)</td></tr>
+            <tr><td>example05</td><td>김수현</td><td>010-****-1115</td><td>04.04 10:00</td><td>알림톡</td><td class="ok">성공 04.04 10:01</td></tr>
+            <tr><td>example06</td><td>박정순</td><td>010-****-1116</td><td>04.03 10:00</td><td>알림톡</td><td class="fail">실패 (실패 사유)</td></tr>
           </tbody>
         </table>
         <div class="hist-page">
@@ -606,9 +397,12 @@
       <div class="mo-hint">9:00~19:00, 30분 단위 (기본값: 10:00)</div>
     </div>
     <div class="mo-f"><label>버튼 링크 (마이페이지)</label><input type="text" value="myshop.com/mypage"></div>
-    <div class="mo-acts"><button class="mo-cn" onclick="closeMo()">취소</button><button class="mo-sv" onclick="closeMo()">저장</button></div>
+    <div class="mo-acts"><button class="mo-cn" onclick="closeMo()">취소</button><button class="mo-sv" onclick="closeMo();setTimeout(function(){showToast('설정이 저장되었습니다.')},100)">저장</button></div>
   </div>
 </div>
+
+<!-- 토스트 알럿 -->
+<div id="toast" style="position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#18181b;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:500;z-index:700;opacity:0;transition:opacity 0.3s;pointer-events:none;"></div>
 
 <!-- 모달: 활성화 컨펌 -->
 <div class="mo-bg" id="moConfirm" onclick="if(event.target===this)closeMo()">
@@ -666,9 +460,6 @@ function setState(s) {
   else if (s === 'inactive') { ps1.textContent = '수신 성공 1,240건 · 152,300원'; ps1.className = 'preset-stat'; ps1.style.opacity = '0.5'; }
   else { ps1.textContent = '미사용'; ps1.className = 'preset-stat muted'; ps1.style.opacity = ''; }
 
-  // 상세 뷰가 열려있으면 닫기 (상태 전환 시)
-  closeDetail();
-
   // 패널 열려있으면 업데이트
   if (document.getElementById('panel').classList.contains('show')) {
     updatePanel(s);
@@ -691,39 +482,6 @@ function closePanel() {
   document.querySelectorAll('.preset-row').forEach(r => r.classList.remove('selected'));
 }
 
-function openDetail(name) {
-  // 사이드 패널 닫기
-  closePanel();
-
-  // 목록 뷰 숨기고 상세 뷰 표시
-  document.getElementById('listView').style.display = 'none';
-  document.getElementById('detailView').classList.add('show');
-
-  // 상세 뷰 이름 업데이트
-  document.querySelector('.detail-name').textContent = name;
-
-  // 상태에 따라 배지/버튼 업데이트
-  const badge = document.getElementById('detailBadge');
-  const action = document.getElementById('detailAction');
-  if (currentState === 'active') {
-    badge.className = 'detail-badge active'; badge.textContent = '활성';
-    action.className = 'btn-sm danger'; action.textContent = '비활성화';
-  } else {
-    badge.className = 'detail-badge inactive'; badge.textContent = '비활성';
-    action.className = 'btn-sm outline'; action.textContent = '다시 활성화';
-  }
-
-  // 탭 초기화
-  document.querySelectorAll('.detail-tab').forEach((t,i) => t.classList.toggle('active', i===0));
-  document.getElementById('dTabSum').classList.remove('hidden');
-  document.getElementById('dTabHist').classList.add('hidden');
-}
-
-function closeDetail() {
-  document.getElementById('detailView').classList.remove('show');
-  document.getElementById('listView').style.display = 'flex';
-  document.querySelectorAll('.preset-row').forEach(r => r.classList.remove('selected'));
-}
 
 function updatePanel(s) {
   const bd = document.getElementById('pBadge');
@@ -767,7 +525,7 @@ function updatePanel(s) {
     if (s === 'active') {
       bd.className = 'badge active'; bd.textContent = '활성';
       bt.className = 'btn danger'; bt.textContent = '비활성화';
-      bt.onclick = function(){ closePanel(); };
+      bt.onclick = function(){ closePanel(); showToast('알림이 비활성화되었습니다.'); };
     } else {
       bd.className = 'badge inactive'; bd.textContent = '비활성';
       bt.className = 'btn outline'; bt.textContent = '다시 활성화';
@@ -783,13 +541,6 @@ function pTab(t, el) {
   document.getElementById('tabHist').classList.toggle('hidden', t !== 'history');
 }
 
-function dTab(t, el) {
-  document.querySelectorAll('.detail-tab').forEach(x => x.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('dTabSum').classList.toggle('hidden', t !== 'summary');
-  document.getElementById('dTabHist').classList.toggle('hidden', t !== 'history');
-}
-
 function prevTab(t, el) {
   document.querySelectorAll('#pSettings .prev-tab').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
@@ -797,47 +548,20 @@ function prevTab(t, el) {
   document.getElementById('prevSms').classList.toggle('hidden', t !== 'sms');
 }
 
-function dPrevTab(t, el) {
-  document.querySelectorAll('#dTabSum .prev-tab').forEach(x => x.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('dPrevAt').classList.toggle('hidden', t !== 'at');
-  document.getElementById('dPrevSms').classList.toggle('hidden', t !== 'sms');
-}
-
 function tglSms() {
   const t = document.getElementById('smsTgl');
   t.classList.toggle('on'); t.classList.toggle('off');
   const w = document.getElementById('smsW');
   const b = document.getElementById('pBtn');
-  if (t.classList.contains('off')) { w.classList.add('hidden'); b.disabled = false; }
-  else if (!smsCfg) { w.classList.remove('hidden'); b.disabled = true; }
+  if (t.classList.contains('off')) { w.classList.add('hidden'); b.disabled = false; showToast('대체 문자 OFF'); }
+  else { showToast('대체 문자 ON'); if (!smsCfg) { w.classList.remove('hidden'); b.disabled = true; } }
 }
 
-function openSettingsPanel() {
-  // 전체 페이지 위에 사이드 패널을 설정 전용 모드로 열기
-  const panel = document.getElementById('panel');
-  document.getElementById('pTitle').textContent = document.querySelector('.detail-name').textContent;
-  document.getElementById('pDesc').textContent = '발송 설정 변경';
-
-  // 설정 전용: 스코어카드/탭/기간 숨기고 설정만 보이기
-  document.getElementById('pBadge').className = 'badge ' + (currentState === 'active' ? 'active' : 'inactive');
-  document.getElementById('pBadge').textContent = currentState === 'active' ? '활성' : '비활성';
-  document.getElementById('pPeriod').classList.add('hidden');
-  document.getElementById('pTabs').classList.add('hidden');
-  document.getElementById('pSc').classList.add('hidden');
-  document.getElementById('pDiv').classList.add('hidden');
-  document.getElementById('pSettingsLabel').classList.remove('hidden');
-  document.getElementById('tabSum').classList.remove('hidden');
-  document.getElementById('tabHist').classList.add('hidden');
-
-  // 하단 버튼을 저장 버튼으로
-  const btn = document.getElementById('pBtn');
-  btn.className = 'btn primary';
-  btn.textContent = '저장';
-  btn.disabled = false;
-  btn.onclick = function(){ closePanel(); };
-
-  panel.classList.add('show');
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(function(){ t.style.opacity = '0'; }, 2000);
 }
 
 function openMo(type) {
