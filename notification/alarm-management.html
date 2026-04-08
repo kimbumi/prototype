@@ -333,7 +333,7 @@
         </div>
       </div>
       <div class="detail-hdr-right">
-        <button class="btn-sm settings" onclick="openMo('settings')">상세 설정</button>
+        <button class="btn-sm settings" onclick="openSettingsPanel()">상세 설정</button>
         <button class="btn-sm danger" id="detailAction">비활성화</button>
       </div>
     </div>
@@ -369,16 +369,19 @@
           </div>
         </div>
 
-        <div class="d-two-col">
+        <!-- 캠페인 내용 -->
+        <div style="margin-top:24px;">
+          <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;">캠페인 내용</h3>
+
           <!-- 미리보기 -->
-          <div class="d-card">
-            <div class="d-card-title">미리보기</div>
-            <div class="prev-tabs">
+          <div class="d-card" style="margin-bottom:12px;">
+            <div class="d-card-title">메세지</div>
+            <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;">
               <button class="prev-tab active" onclick="dPrevTab('at',this)">알림톡</button>
-              <button class="prev-tab" onclick="dPrevTab('sms',this)">대체 문자</button>
+              <button class="prev-tab" onclick="dPrevTab('sms',this)">대체 문자 미리보기</button>
             </div>
-            <div id="dPrevAt">
-              <div class="kakao">
+            <div id="dPrevAt" style="display:flex;justify-content:center;">
+              <div class="kakao" style="max-width:320px;width:100%;">
                 <div class="kakao-in">
                   <p>안녕하세요 <span class="v">#{{고객 이름}}</span>님.</p>
                   <p><span class="v">#{{브랜드명}}</span>입니다.</p>
@@ -393,8 +396,8 @@
                 <div class="kakao-btns"><a>채널 추가</a><a>마이페이지</a></div>
               </div>
             </div>
-            <div id="dPrevSms" class="hidden">
-              <div class="sms-bub">
+            <div id="dPrevSms" class="hidden" style="display:none;justify-content:center;">
+              <div class="sms-bub" style="max-width:320px;width:100%;">
                 <p>[<span class="v">#{{브랜드명}}</span>]</p>
                 <p style="margin-top:6px;">보유하신 쿠폰이 곧 소멸될 예정입니다.</p>
                 <p style="margin-top:4px;">■ 쿠폰명: <span class="v">#{{소멸 예정 쿠폰 이름}}</span></p>
@@ -405,16 +408,26 @@
             </div>
           </div>
 
-          <!-- 발송 설정 -->
+          <!-- 발송 설정 — 사이드 패널과 동일한 카드 형태 -->
+          <div class="d-card" style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:11px;color:#a1a1aa;">발송 설정</div>
+                <div style="font-size:14px;font-weight:600;margin-top:4px;">쿠폰 만료 3일 전, 오전 10시에 발송</div>
+              </div>
+              <button style="padding:7px 14px;border:1px solid #e4e4e7;border-radius:8px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;color:#71717a;" onclick="openMo('settings')">수정하기</button>
+            </div>
+          </div>
+
+          <!-- 대체 문자 — 사이드 패널과 동일한 카드 형태 -->
           <div class="d-card">
-            <div class="d-card-title">발송 설정</div>
-            <div class="d-set-row"><span class="d-set-label">트리거</span><span class="d-set-val">쿠폰 만료일</span></div>
-            <div class="d-set-row"><span class="d-set-label">발송 시점</span><span class="d-set-val">만료 3일 전 (D-3)</span></div>
-            <div class="d-set-row"><span class="d-set-label">발송 시간</span><span class="d-set-val">오전 10:00</span></div>
-            <div class="d-set-row"><span class="d-set-label">채널</span><span class="d-set-val">알림톡</span></div>
-            <div class="d-set-row"><span class="d-set-label">버튼 링크</span><span class="d-set-val" style="font-size:12px;">myshop.com/mypage</span></div>
-            <div class="d-set-row"><span class="d-set-label">대체 문자</span><span class="tgl on"></span></div>
-            <div class="d-set-note">쿠폰 만료일이 설정된 고객에게만 발송됩니다.</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:11px;color:#a1a1aa;">대체 문자</div>
+                <div style="font-size:14px;font-weight:600;margin-top:4px;">발송 실패 시 대체 문자 발송</div>
+              </div>
+              <span class="tgl on"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -666,13 +679,7 @@ function openPanel(el, name, desc) {
   document.querySelectorAll('.preset-row').forEach(r => r.classList.remove('selected'));
   el.classList.add('selected');
 
-  // 활성/비활성 상태이면 Full Page Detail View 열기
-  if (currentState === 'active' || currentState === 'inactive') {
-    openDetail(name);
-    return;
-  }
-
-  // 그 외 상태는 사이드 패널 열기
+  // 전 상태 사이드 패널 통일
   document.getElementById('pTitle').textContent = name;
   document.getElementById('pDesc').textContent = desc;
   updatePanel(currentState);
@@ -804,6 +811,33 @@ function tglSms() {
   const b = document.getElementById('pBtn');
   if (t.classList.contains('off')) { w.classList.add('hidden'); b.disabled = false; }
   else if (!smsCfg) { w.classList.remove('hidden'); b.disabled = true; }
+}
+
+function openSettingsPanel() {
+  // 전체 페이지 위에 사이드 패널을 설정 전용 모드로 열기
+  const panel = document.getElementById('panel');
+  document.getElementById('pTitle').textContent = document.querySelector('.detail-name').textContent;
+  document.getElementById('pDesc').textContent = '발송 설정 변경';
+
+  // 설정 전용: 스코어카드/탭/기간 숨기고 설정만 보이기
+  document.getElementById('pBadge').className = 'badge ' + (currentState === 'active' ? 'active' : 'inactive');
+  document.getElementById('pBadge').textContent = currentState === 'active' ? '활성' : '비활성';
+  document.getElementById('pPeriod').classList.add('hidden');
+  document.getElementById('pTabs').classList.add('hidden');
+  document.getElementById('pSc').classList.add('hidden');
+  document.getElementById('pDiv').classList.add('hidden');
+  document.getElementById('pSettingsLabel').classList.remove('hidden');
+  document.getElementById('tabSum').classList.remove('hidden');
+  document.getElementById('tabHist').classList.add('hidden');
+
+  // 하단 버튼을 저장 버튼으로
+  const btn = document.getElementById('pBtn');
+  btn.className = 'btn primary';
+  btn.textContent = '저장';
+  btn.disabled = false;
+  btn.onclick = function(){ closePanel(); };
+
+  panel.classList.add('show');
 }
 
 function openMo(type) {
