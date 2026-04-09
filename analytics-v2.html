@@ -61,22 +61,9 @@
     <div class="page-header"><div class="page-title">캠페인 통계</div></div>
     <div class="page-content">
 
-      <!-- 스코어카드 -->
-      <div class="scorecards" id="scorecards"></div>
-
       <!-- 필터 -->
       <div class="filters">
         <div style="display:flex;gap:12px;align-items:flex-end;">
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <div style="font-size:12px;color:#888;font-weight:500;">기간</div>
-            <select class="filter-select" id="periodFilter" onchange="refresh()">
-              <option value="7" selected>최근 7일</option>
-              <option value="14">최근 14일</option>
-              <option value="30">최근 30일</option>
-              <option value="90">최근 90일</option>
-              <option value="all">전체 기간</option>
-            </select>
-          </div>
           <div style="display:flex;flex-direction:column;gap:4px;">
             <div style="font-size:12px;color:#888;font-weight:500;">캠페인 유형</div>
             <div class="dropdown-wrap">
@@ -111,8 +98,30 @@
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-end;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-size:12px;color:#888;font-weight:500;">기간</div>
+            <select class="filter-select" id="periodFilter" onchange="handlePeriodChange()">
+              <option value="7" selected>최근 7일</option>
+              <option value="14">최근 14일</option>
+              <option value="30">최근 30일</option>
+              <option value="90">최근 90일</option>
+              <option value="thisMonth">이번 달</option>
+              <option value="lastMonth">지난 달</option>
+              <option value="all">전체 기간</option>
+              <option value="custom">사용자 지정</option>
+            </select>
+            <div id="customDateRange" style="display:none;flex-direction:row;gap:6px;align-items:center;margin-top:4px;">
+              <input type="date" id="customStart" class="filter-select" style="width:130px;" />
+              <span style="font-size:12px;color:#888;">~</span>
+              <input type="date" id="customEnd" class="filter-select" style="width:130px;" />
+              <button onclick="refresh()" style="padding:4px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;cursor:pointer;">적용</button>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- 스코어카드 -->
+      <div class="scorecards" id="scorecards"></div>
 
       <!-- 차트 -->
       <div class="chart-container">
@@ -132,13 +141,19 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:12px;color:#888;">정렬</span>
-            <select class="filter-select" style="min-width:140px;" id="sortSelect" onchange="currentSortDir='desc';renderTable()">
-              <option value="roas">ROAS 높은순</option>
-              <option value="conv_amt">전환 금액 높은순</option>
-              <option value="cost">발송 비용 높은순</option>
-              <option value="recv">수신 성공 높은순</option>
-              <option value="ctr">클릭률 높은순</option>
-              <option value="cvr">전환율 높은순</option>
+            <select class="filter-select" style="min-width:140px;" id="sortSelect" onchange="handleSortChange()">
+              <option value="roas_desc">ROAS 높은순</option>
+              <option value="roas_asc">ROAS 낮은순</option>
+              <option value="conv_amt_desc">전환 금액 높은순</option>
+              <option value="conv_amt_asc">전환 금액 낮은순</option>
+              <option value="cost_desc">발송 비용 높은순</option>
+              <option value="cost_asc">발송 비용 낮은순</option>
+              <option value="recv_desc">수신 성공 높은순</option>
+              <option value="recv_asc">수신 성공 낮은순</option>
+              <option value="ctr_desc">클릭률 높은순</option>
+              <option value="ctr_asc">클릭률 낮은순</option>
+              <option value="cvr_desc">전환율 높은순</option>
+              <option value="cvr_asc">전환율 낮은순</option>
             </select>
           </div>
         </div>
@@ -209,14 +224,29 @@ let checkedIds = new Set();
 let currentSortDir = 'desc';
 let selectedCampaignId = null;
 
+function handleSortChange() {
+  const val = document.getElementById('sortSelect').value;
+  const parts = val.split('_');
+  currentSortDir = parts.pop();
+  renderTable();
+}
+
+function getSortKey() {
+  const val = document.getElementById('sortSelect').value;
+  const parts = val.split('_');
+  parts.pop(); // remove asc/desc
+  return parts.join('_');
+}
+
 function sortByCol(col) {
   const sel = document.getElementById('sortSelect');
-  if (sel.value === col) {
+  const currentKey = getSortKey();
+  if (currentKey === col) {
     currentSortDir = currentSortDir === 'desc' ? 'asc' : 'desc';
   } else {
-    sel.value = col;
     currentSortDir = 'desc';
   }
+  sel.value = col + '_' + currentSortDir;
   renderTable();
 }
 
@@ -316,7 +346,7 @@ function renderScorecards() {
 function renderTable() {
   const data = getFilteredData();
   const campaigns = aggregateByCampaign(data);
-  const sortKey = document.getElementById('sortSelect').value;
+  const sortKey = getSortKey();
   const dir = currentSortDir === 'desc' ? -1 : 1;
   campaigns.sort((a,b) => (a[sortKey] - b[sortKey]) * dir);
 
@@ -464,12 +494,13 @@ function renderChart() {
   });
   ctx.lineTo(pad.l + (w - pad.l - pad.r), pad.t + chartH);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(79, 70, 229, 0.08)';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
   ctx.fill();
 
-  // 전체 추세선
-  ctx.strokeStyle = '#4F46E5';
-  ctx.lineWidth = 2.5;
+  // 전체 추세선 (기준선 — 약하게)
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
   ctx.beginPath();
   maValues.forEach((v, i) => {
     const x = pad.l + (w - pad.l - pad.r) * i / (dates.length - 1 || 1);
@@ -477,10 +508,11 @@ function renderChart() {
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.stroke();
+  ctx.setLineDash([]);
 
   // 체크된 캠페인들 겹침
   const campColors = ['#F59E0B','#EC4899','#06B6D4','#8B5CF6','#EF4444','#14B8A6'];
-  let legendHtml = '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:3px;background:#4F46E5;border-radius:1px;"></span>전체</span>';
+  let legendHtml = '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:0;border-top:1.5px dashed #aaa;"></span>전체 캠페인 평균 ROAS</span>';
   let colorIdx = 0;
 
   checkedIds.forEach(campId => {
@@ -517,18 +549,16 @@ function renderChart() {
     } else {
       // 여러 날이면 선으로 연결
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       campPoints.forEach((p, i) => {
         i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
       });
       ctx.stroke();
-      ctx.setLineDash([]);
     }
 
     const campName = campData[0].n;
-    legendHtml += `<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:0;border-top:2px dashed ${color};"></span>${campName}</span>`;
+    legendHtml += `<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:2.5px;background:${color};border-radius:1px;"></span>${campName}</span>`;
   });
 
   document.getElementById('chartLegend').innerHTML = legendHtml;
@@ -612,6 +642,12 @@ document.querySelectorAll('.dropdown-menu').forEach(menu => {
     }
   });
 });
+
+function handlePeriodChange() {
+  const val = document.getElementById('periodFilter').value;
+  document.getElementById('customDateRange').style.display = val === 'custom' ? 'flex' : 'none';
+  if (val !== 'custom') refresh();
+}
 
 function refresh() {
   checkedIds.clear();
