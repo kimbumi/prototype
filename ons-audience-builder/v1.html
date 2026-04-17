@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONS 캠페인 빌더 (PRD 프로토타입)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f6f7f8;
+    color: #2e2e31;
+    min-height: 100vh;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    background: #fff;
+    height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #e9ecee;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-close {
+    width: 24px; height: 24px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #2e2e31;
+    border: none; background: transparent;
+  }
+  .header-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .header-title span {
+    font-size: 18px; font-weight: 600;
+    letter-spacing: -0.6px; white-space: nowrap;
+  }
+  .header-title .edit-icon {
+    width: 24px; height: 24px;
+    cursor: pointer; color: #838589;
+    border: none; background: transparent;
+  }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .btn-preview {
+    display: flex; align-items: center; gap: 4px;
+    height: 38px;
+    padding: 8px 12px;
+    background: #e9ecee;
+    border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.6px; color: #2e2e31;
+    cursor: pointer;
+  }
+  .btn-save {
+    height: 38px;
+    padding: 8px 16px;
+    background: #2e2e31;
+    border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.6px; color: #fff;
+    cursor: pointer;
+  }
+  .btn-save:hover { background: #464648; }
+
+  /* ─── Scenario Bar (PO 이해용 프리필) ─── */
+  .scenario-bar {
+    background: #fffef2;
+    border-bottom: 1px solid #f3e9b8;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .scenario-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #8a6f00;
+    letter-spacing: -0.6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .scenario-label::before {
+    content: '▶';
+    font-size: 10px;
+  }
+  .scenario-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    background: #fff;
+    border: 1px solid #e4d488;
+    border-radius: 16px;
+    font-size: 13px; font-weight: 600;
+    color: #5a4800;
+    letter-spacing: -0.6px;
+    cursor: pointer;
+  }
+  .scenario-btn:hover { background: #fef6d5; }
+  .scenario-btn.active {
+    background: #8a6f00;
+    color: #fff;
+    border-color: #8a6f00;
+  }
+  .scenario-tier {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #f3e9b8;
+    color: #8a6f00;
+  }
+  .scenario-btn.active .scenario-tier {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+  }
+  .scenario-reset {
+    font-size: 12px;
+    color: #8a6f00;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    letter-spacing: -0.6px;
+    padding: 4px 8px;
+  }
+
+  /* ─── Container ─── */
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px 24px 200px;
+  }
+
+  /* ─── Step Card ─── */
+  .step-card {
+    background: #fff;
+    border: 1px solid #e9ecee;
+    border-radius: 16px;
+    overflow: hidden;
+    width: 1200px;
+    max-width: 100%;
+    transition: border-color 0.15s;
+  }
+  .step-card.active {
+    border: 3px solid #837aff;
+    box-shadow: 0 4px 24px -4px rgba(131, 122, 255, 0.16);
+  }
+
+  .step-header {
+    background: #fff;
+    border-bottom: 1px solid #e9ecee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 20px;
+    min-height: 72px;
+    cursor: pointer;
+  }
+  .step-header-left {
+    display: flex; align-items: center;
+    gap: 12px; flex: 1;
+  }
+  .step-badge {
+    width: 24px; height: 24px;
+    border-radius: 32px;
+    background: #e9ecee;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-badge.active { background: #837aff; }
+  .step-badge span {
+    font-size: 16px; font-weight: 700;
+    color: #9ea1a7; letter-spacing: -0.6px;
+  }
+  .step-badge.active span { color: #fff; }
+  .step-title {
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.6px; color: #2e2e31;
+  }
+  .step-summary {
+    font-size: 13px;
+    color: #838589;
+    letter-spacing: -0.6px;
+    padding-right: 16px;
+  }
+
+  .step-body {
+    padding: 28px 56px;
+  }
+
+  /* ─── Field Row ─── */
+  .field-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f3f4f5;
+  }
+  .field-row:last-child { border-bottom: 0; }
+  .field-label {
+    flex-shrink: 0;
+    width: 120px;
+    padding-top: 9px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #5e5e61;
+    letter-spacing: -0.6px;
+  }
+  .field-label .optional {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ea1a7;
+    margin-left: 4px;
+  }
+  .field-value {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .field-value-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .field-hint {
+    font-size: 12px;
+    color: #9ea1a7;
+    letter-spacing: -0.6px;
+    line-height: 17px;
+  }
+
+  /* ─── Chip (dropdown-like) ─── */
+  .chip {
+    display: inline-flex; align-items: center;
+    gap: 6px;
+    height: 38px;
+    padding: 8px 10px 8px 12px;
+    background: #f6f7f8;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #464648;
+    cursor: pointer;
+    letter-spacing: -0.6px;
+    white-space: nowrap;
+  }
+  .chip:hover { background: #e9ecee; }
+  .chip.purple {
+    background: #f1efff;
+    color: #5549dd;
+  }
+  .chip.purple:hover { background: #e4e0ff; }
+  .chip-arrow {
+    width: 16px; height: 16px;
+    color: #838589;
+  }
+  .chip-close {
+    width: 16px; height: 16px;
+    color: #838589;
+    margin-left: 2px;
+    cursor: pointer;
+  }
+  .suffix {
+    font-size: 15px; font-weight: 500;
+    color: #6e6e72; letter-spacing: -0.6px;
+  }
+
+  /* ─── Radio inline ─── */
+  .radio-group-inline { display: flex; gap: 20px; align-items: center; }
+  .radio-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 15px; font-weight: 600;
+    color: #2e2e31; letter-spacing: -0.6px;
+    cursor: pointer;
+  }
+  .radio-item input[type="radio"] {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border: 2px solid #cbcdd2;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .radio-item input[type="radio"]:checked { border-color: #837aff; }
+  .radio-item input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px; height: 10px;
+    background: #837aff;
+    border-radius: 50%;
+  }
+
+  /* ─── Add button ─── */
+  .btn-add {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 34px;
+    padding: 0 12px 0 8px;
+    background: transparent;
+    border: 1px dashed #cbcdd2;
+    border-radius: 6px;
+    font-size: 13px; font-weight: 700;
+    color: #6e6e72;
+    cursor: pointer;
+    letter-spacing: -0.6px;
+    align-self: flex-start;
+  }
+  .btn-add:hover {
+    background: #f6f7f8;
+    border-color: #837aff;
+    color: #837aff;
+  }
+  .btn-add svg { width: 16px; height: 16px; }
+
+  /* ─── Trigger detail block ─── */
+  .trigger-detail {
+    margin-top: 4px;
+    padding: 14px 16px;
+    background: #fafbfc;
+    border: 1px solid #edeef0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .trigger-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .trigger-detail-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #838589;
+    letter-spacing: -0.6px;
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .trigger-hint-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #5e5e61;
+    background: #f6f7f8;
+    padding: 8px 12px;
+    border-radius: 6px;
+    letter-spacing: -0.6px;
+    line-height: 18px;
+  }
+  .trigger-hint-link strong { color: #5549dd; font-weight: 700; }
+
+  /* ─── Condition block (AND 누적) ─── */
+  .condition-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .and-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #837aff;
+    background: #f1efff;
+    padding: 3px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.4px;
+  }
+
+  /* ─── Input ─── */
+  .input-text {
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #cbcdd2;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+    color: #2e2e31;
+    letter-spacing: -0.6px;
+    outline: none;
+    font-family: inherit;
+    min-width: 120px;
+  }
+  .input-text:focus { border-color: #837aff; }
+  .input-number { width: 80px; text-align: right; }
+
+  /* ─── Dropdown menu (popup) ─── */
+  .dropdown { position: relative; display: inline-block; }
+  .dropdown-menu {
+    display: none;
+    position: fixed;
+    background: #fff;
+    border: 1px solid #e9ecee;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    min-width: 220px;
+    z-index: 99999;
+    overflow: hidden;
+    padding: 4px 0;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-menu-item {
+    padding: 10px 14px;
+    font-size: 14px; font-weight: 600;
+    color: #2e2e31; cursor: pointer;
+    letter-spacing: -0.6px;
+  }
+  .dropdown-menu-item:hover { background: #f6f7f8; }
+  .dropdown-menu-item.selected { color: #837aff; }
+  .dropdown-menu-group {
+    padding: 8px 14px 4px;
+    font-size: 11px; font-weight: 700;
+    color: #9ea1a7;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+  }
+  .dropdown-menu-group:not(:first-child) { border-top: 1px solid #f3f4f5; margin-top: 4px; }
+
+  /* ─── Content section (좌우 분할) ─── */
+  .content-split {
+    display: flex;
+    min-height: 520px;
+    background: #f6f7f8;
+  }
+  .content-left {
+    flex: 1;
+    background: #fff;
+    padding: 24px 40px;
+    border-right: 1px solid #e9ecee;
+  }
+  .content-right {
+    width: 460px;
+    flex-shrink: 0;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+  .content-right-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9ea1a7;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .phone-frame {
+    background: #e8eef3;
+    border: 14px solid #2e2e31;
+    border-radius: 32px;
+    width: 320px;
+    height: 560px;
+    padding: 16px 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-topbar {
+    height: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .phone-topbar-notch {
+    width: 80px;
+    height: 18px;
+    background: #2e2e31;
+    border-radius: 0 0 10px 10px;
+  }
+  .phone-page {
+    flex: 1;
+    background: #fff;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-page-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9ea1a7;
+    letter-spacing: -0.6px;
+  }
+  .phone-page-skeleton {
+    background: #f3f4f5;
+    border-radius: 4px;
+    height: 14px;
+  }
+  .phone-page-skeleton.short { width: 60%; }
+  .phone-page-skeleton.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    height: auto;
+    background: transparent;
+  }
+  .phone-page-skeleton.grid > div {
+    height: 80px;
+    background: #f3f4f5;
+    border-radius: 4px;
+  }
+
+  /* Banner variants */
+  .banner {
+    position: absolute;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    border: 1px solid #e9ecee;
+    overflow: hidden;
+  }
+  .banner-popup {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 240px;
+    border-radius: 10px;
+    padding: 16px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  .banner-bar {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px 12px;
+    background: #837aff;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.6px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    border: 0;
+  }
+  .banner-img {
+    height: 100px;
+    background: linear-gradient(135deg, #cfd8e8 0%, #b5c4d9 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6e7b8f;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .banner-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2e2e31;
+    letter-spacing: -0.6px;
+  }
+  .banner-body {
+    font-size: 12px;
+    color: #6e6e72;
+    letter-spacing: -0.6px;
+    line-height: 16px;
+  }
+  .banner-cta {
+    margin-top: 4px;
+    background: #2e2e31;
+    color: #fff;
+    padding: 9px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+  }
+  .banner-close {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 18px; height: 18px;
+    color: #838589;
+    cursor: pointer;
+  }
+
+  /* ─── Image upload placeholder ─── */
+  .img-upload {
+    background: #f6f7f8;
+    border: 1px dashed #cbcdd2;
+    border-radius: 8px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ea1a7;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.6px;
+    cursor: pointer;
+  }
+  .img-upload:hover { border-color: #837aff; color: #837aff; }
+
+  /* ─── Content editor sections ─── */
+  .editor-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #f3f4f5;
+  }
+  .editor-block:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+  .editor-block-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #5e5e61;
+    letter-spacing: -0.6px;
+  }
+  .editor-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .device-tabs {
+    display: flex;
+    gap: 6px;
+    background: #f6f7f8;
+    padding: 3px;
+    border-radius: 6px;
+    width: fit-content;
+    margin-bottom: 8px;
+  }
+  .device-tab {
+    padding: 6px 14px;
+    font-size: 12px; font-weight: 700;
+    color: #838589;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: -0.6px;
+  }
+  .device-tab.active {
+    background: #fff;
+    color: #2e2e31;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .textarea {
+    padding: 10px 12px;
+    border: 1px solid #cbcdd2;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    color: #2e2e31;
+    letter-spacing: -0.6px;
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+  }
+  .textarea:focus { border-color: #837aff; }
+
+  /* ─── Footer / empty hint ─── */
+  .empty-hint {
+    font-size: 13px;
+    color: #9ea1a7;
+    letter-spacing: -0.6px;
+    font-style: italic;
+  }
+
+  /* ─── Summary (접힘 상태 요약) ─── */
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f1efff;
+    color: #5549dd;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+  }
+  .tag.gray {
+    background: #f3f4f5;
+    color: #5e5e61;
+  }
+
+  /* ─── Coverage footer (PRD 설명 장치) ─── */
+  .coverage-footer {
+    width: 1200px;
+    max-width: 100%;
+    padding: 20px 24px;
+    background: #fff;
+    border: 1px solid #e9ecee;
+    border-radius: 12px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 13px;
+    color: #5e5e61;
+    letter-spacing: -0.6px;
+    line-height: 18px;
+  }
+  .coverage-footer strong {
+    color: #2e2e31;
+    font-weight: 700;
+  }
+  .coverage-footer .icon {
+    width: 32px; height: 32px;
+    background: #f1efff;
+    color: #5549dd;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  @media (max-width: 1300px) {
+    .step-card, .coverage-footer { width: 100%; }
+    .content-right { width: 360px; }
+    .phone-frame { width: 280px; height: 480px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ Header ══════════ -->
+<header class="header">
+  <button class="header-close" title="닫기">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <div class="header-title">
+    <span id="campaignName">새 온사이트 캠페인</span>
+    <button class="edit-icon" title="이름 수정">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="24" height="24">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </button>
+  </div>
+  <div class="header-actions">
+    <button class="btn-preview">미리보기</button>
+    <button class="btn-save">캠페인 저장</button>
+  </div>
+</header>
+
+<!-- ══════════ Scenario Prefill Bar (PO 이해용) ══════════ -->
+<div class="scenario-bar">
+  <span class="scenario-label">시나리오로 채워보기</span>
+  <button class="scenario-btn" onclick="loadScenario('basic', this)">
+    <span class="scenario-tier">기본</span>
+    사이트 전체 프로모션 배너
+  </button>
+  <button class="scenario-btn" onclick="loadScenario('nonmember', this)">
+    <span class="scenario-tier">중급</span>
+    비회원 가입 유도
+  </button>
+  <button class="scenario-btn" onclick="loadScenario('vip', this)">
+    <span class="scenario-tier">중급</span>
+    VIP 전용 혜택
+  </button>
+  <button class="scenario-btn" onclick="loadScenario('cart-crosssell', this)">
+    <span class="scenario-tier">중급</span>
+    담기 직후 교차판매
+  </button>
+  <button class="scenario-btn" onclick="loadScenario('cart-exit', this)">
+    <span class="scenario-tier">고급</span>
+    장바구니 이탈 감지 리마인드
+  </button>
+  <button class="scenario-btn" onclick="loadScenario('engaged-firstvisit', this)">
+    <span class="scenario-tier">고급</span>
+    첫 방문 + 고관여 가입 푸시
+  </button>
+  <button class="scenario-reset" onclick="resetAll()">초기화</button>
+</div>
+
+<main class="container">
+
+  <!-- ══════════ Section 1: 타겟팅 ══════════ -->
+  <div class="step-card active" id="card1" onclick="activateCard('card1')">
+    <div class="step-header">
+      <div class="step-header-left">
+        <div class="step-badge active"><span>1</span></div>
+        <div>
+          <div class="step-title">누구에게, 어떤 조건일 때 노출할까요?</div>
+        </div>
+      </div>
+      <div class="step-summary" id="summary1"></div>
+    </div>
+    <div class="step-body">
+
+      <!-- 대상 -->
+      <div class="field-row">
+        <div class="field-label">대상</div>
+        <div class="field-value">
+          <div class="radio-group-inline">
+            <label class="radio-item">
+              <input type="radio" name="audience-scope" value="all" checked onchange="onScopeChange(this)"> 모든 방문자
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="audience-scope" value="member" onchange="onScopeChange(this)"> 회원
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="audience-scope" value="nonmember" onchange="onScopeChange(this)"> 비회원
+            </label>
+          </div>
+          <div class="field-hint">회원 선택 시, 저장된 오디언스를 추가로 지정할 수 있어요.</div>
+        </div>
+      </div>
+
+      <!-- 오디언스 (회원 선택 시만 활성) -->
+      <div class="field-row" id="audienceRow" style="display:none;">
+        <div class="field-label">오디언스<span class="optional">선택</span></div>
+        <div class="field-value">
+          <div class="field-value-row">
+            <div class="dropdown">
+              <button class="chip purple" onclick="toggleDropdown(event, 'dd-audience')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="7" r="3" stroke-dasharray="2 2"/></svg>
+                <span id="lbl-audience">오디언스 선택</span>
+                <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="dropdown-menu" id="dd-audience">
+                <div class="dropdown-menu-group">저장된 오디언스</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-audience','lbl-audience','VIP 고객')">VIP 고객</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-audience','lbl-audience','90일 미구매 회원')">90일 미구매 회원</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-audience','lbl-audience','쿠폰 보유 회원')">쿠폰 보유 회원</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-audience','lbl-audience','첫 구매 전 회원')">첫 구매 전 회원</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-audience','lbl-audience','휴면 회원')">휴면 회원</div>
+                <div class="dropdown-menu-group">새로 만들기</div>
+                <div class="dropdown-menu-item" style="color:#837aff;">+ 오디언스 만들기</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 트리거 -->
+      <div class="field-row">
+        <div class="field-label">트리거</div>
+        <div class="field-value">
+          <div class="field-value-row">
+            <div class="dropdown">
+              <button class="chip" onclick="toggleDropdown(event, 'dd-trigger')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span id="lbl-trigger">페이지 경로</span>
+                <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="dropdown-menu" id="dd-trigger">
+                <div class="dropdown-menu-item selected" onclick="selectTrigger('페이지 경로')">페이지 경로 <span style="color:#9ea1a7;font-weight:500;">(기본)</span></div>
+                <div class="dropdown-menu-item" onclick="selectTrigger('행동 이벤트')">행동 이벤트 <span style="color:#9ea1a7;font-weight:500;">(장바구니 담기 등)</span></div>
+                <div class="dropdown-menu-item" onclick="selectTrigger('전환 이벤트')">전환 이벤트 <span style="color:#9ea1a7;font-weight:500;">(구매/가입)</span></div>
+              </div>
+            </div>
+            <span class="suffix">를 기준으로</span>
+          </div>
+
+          <!-- 페이지 경로일 때: 노출 페이지로 유도 -->
+          <div class="trigger-hint-link" id="triggerHint-path">
+            💡 노출할 페이지는 아래 <strong>노출 설정 &gt; 노출 페이지</strong>에서 지정해요.
+          </div>
+
+          <!-- 행동 이벤트일 때: 이벤트 + 대상 상품 -->
+          <div class="trigger-detail" id="triggerDetail-action" style="display:none;">
+            <div class="trigger-detail-row">
+              <span class="trigger-detail-label">이벤트</span>
+              <div class="dropdown">
+                <button class="chip" onclick="toggleDropdown(event,'dd-action-event')">
+                  <span id="lbl-action-event">장바구니 담기</span>
+                  <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="dropdown-menu" id="dd-action-event">
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-event','lbl-action-event','장바구니 담기')">장바구니 담기</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-event','lbl-action-event','상품 조회')">상품 조회</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-event','lbl-action-event','상품 검색')">상품 검색</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-event','lbl-action-event','위시리스트 추가')">위시리스트 추가</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-event','lbl-action-event','쿠폰 다운로드')">쿠폰 다운로드</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-event','lbl-action-event','리뷰 작성')">리뷰 작성</div>
+                </div>
+              </div>
+            </div>
+            <div class="trigger-detail-row">
+              <span class="trigger-detail-label">대상 상품</span>
+              <div class="radio-group-inline">
+                <label class="radio-item">
+                  <input type="radio" name="action-product-scope" value="all" checked onchange="onActionScopeChange(this)"> 모든 상품
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="action-product-scope" value="specific" onchange="onActionScopeChange(this)"> 특정 상품·카테고리
+                </label>
+              </div>
+              <div class="dropdown" id="actionProductPick" style="display:none;">
+                <button class="chip purple" onclick="toggleDropdown(event,'dd-action-product')">
+                  <span id="lbl-action-product">상품·카테고리 선택</span>
+                  <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="dropdown-menu" id="dd-action-product">
+                  <div class="dropdown-menu-group">카테고리</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-product','lbl-action-product','아우터 카테고리')">아우터</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-product','lbl-action-product','뷰티 카테고리')">뷰티</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-product','lbl-action-product','리빙 카테고리')">리빙</div>
+                  <div class="dropdown-menu-group">상품</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-action-product','lbl-action-product','상품 직접 지정')">+ 상품 직접 지정</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 전환 이벤트일 때: 이벤트 + 조건 -->
+          <div class="trigger-detail" id="triggerDetail-conversion" style="display:none;">
+            <div class="trigger-detail-row">
+              <span class="trigger-detail-label">이벤트</span>
+              <div class="dropdown">
+                <button class="chip" onclick="toggleDropdown(event,'dd-conv-event')">
+                  <span id="lbl-conv-event">구매 완료</span>
+                  <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="dropdown-menu" id="dd-conv-event">
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-conv-event','lbl-conv-event','구매 완료')">구매 완료</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-conv-event','lbl-conv-event','회원 가입')">회원 가입</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-conv-event','lbl-conv-event','쿠폰 사용')">쿠폰 사용</div>
+                  <div class="dropdown-menu-item" onclick="selectDropdown('dd-conv-event','lbl-conv-event','앱 설치')">앱 설치</div>
+                </div>
+              </div>
+            </div>
+            <div class="trigger-detail-row">
+              <span class="trigger-detail-label">상세 조건<span class="optional" style="margin-left:4px;">선택</span></span>
+              <div id="convConditions" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span class="empty-hint" id="convConditionsEmpty">없음</span>
+              </div>
+              <button class="btn-add" onclick="addConvCondition()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                상품/금액 조건
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 조건 (런타임) -->
+      <div class="field-row">
+        <div class="field-label">조건<span class="optional">선택·AND</span></div>
+        <div class="field-value" id="conditionList">
+          <div class="empty-hint" id="conditionEmpty">추가 조건 없음</div>
+          <button class="btn-add" onclick="addCondition()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            조건 추가
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ Section 2: 노출 설정 ══════════ -->
+  <div class="step-card" id="card2" onclick="activateCard('card2')">
+    <div class="step-header">
+      <div class="step-header-left">
+        <div class="step-badge"><span>2</span></div>
+        <div>
+          <div class="step-title">어디서, 얼마나 자주 노출할까요?</div>
+        </div>
+      </div>
+      <div class="step-summary" id="summary2"></div>
+    </div>
+    <div class="step-body">
+
+      <!-- 노출 페이지 -->
+      <div class="field-row">
+        <div class="field-label">노출 페이지</div>
+        <div class="field-value">
+          <div class="field-value-row" id="includePages">
+            <span class="suffix" style="font-size:13px;color:#9ea1a7;">포함</span>
+            <div class="chip purple" style="cursor:default;">
+              <span id="lbl-include">사이트 전체</span>
+            </div>
+            <button class="btn-add" onclick="alert('(프로토타입) 페이지 유형 / URL / Parameter 조건을 추가')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              페이지 추가
+            </button>
+          </div>
+          <div class="field-value-row" id="excludePages">
+            <span class="suffix" style="font-size:13px;color:#9ea1a7;">제외</span>
+            <span class="empty-hint" id="excludeEmpty">없음</span>
+            <button class="btn-add" onclick="alert('(프로토타입) 제외할 페이지 조건을 추가')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              제외 페이지
+            </button>
+          </div>
+          <div class="field-hint">페이지 유형 · URL · URL Parameter 중에서 지정. 제외는 비밀링크·테스트페이지 등에 사용.</div>
+        </div>
+      </div>
+
+      <!-- 기간 -->
+      <div class="field-row">
+        <div class="field-label">기간</div>
+        <div class="field-value">
+          <div class="radio-group-inline">
+            <label class="radio-item">
+              <input type="radio" name="period" value="always" checked onchange="onPeriodChange(this)"> 상시
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="period" value="range" onchange="onPeriodChange(this)"> 기간 설정
+            </label>
+          </div>
+          <div class="field-value-row" id="periodRange" style="display:none;">
+            <input type="date" class="input-text" id="periodStart">
+            <span class="suffix">~</span>
+            <input type="date" class="input-text" id="periodEnd">
+          </div>
+        </div>
+      </div>
+
+      <!-- 피로도 -->
+      <div class="field-row">
+        <div class="field-label">피로도</div>
+        <div class="field-value">
+          <div class="field-value-row">
+            <div class="dropdown">
+              <button class="chip" onclick="toggleDropdown(event,'dd-fatigue')">
+                <span id="lbl-fatigue">세션당</span>
+                <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="dropdown-menu" id="dd-fatigue">
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-fatigue','lbl-fatigue','세션당')">세션당</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-fatigue','lbl-fatigue','일당')">일당</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-fatigue','lbl-fatigue','주당')">주당</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-fatigue','lbl-fatigue','사용자당')">사용자당</div>
+              </div>
+            </div>
+            <input type="number" class="input-text input-number" id="fatigueCount" value="1" min="1">
+            <span class="suffix">회까지 노출</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ Section 3: 콘텐츠 ══════════ -->
+  <div class="step-card" id="card3" onclick="activateCard('card3')">
+    <div class="step-header">
+      <div class="step-header-left">
+        <div class="step-badge"><span>3</span></div>
+        <div>
+          <div class="step-title">어떤 배너를 보여줄까요?</div>
+        </div>
+      </div>
+      <div class="step-summary" id="summary3"></div>
+    </div>
+
+    <div class="content-split">
+      <!-- 좌: 편집 -->
+      <div class="content-left">
+
+        <div class="editor-block">
+          <div class="editor-block-label">소재 유형</div>
+          <div class="radio-group-inline">
+            <label class="radio-item">
+              <input type="radio" name="banner-type" value="popup" checked onchange="onBannerTypeChange(this)"> 팝업
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="banner-type" value="bar" onchange="onBannerTypeChange(this)"> 바 (하단 고정)
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="banner-type" value="slide" onchange="onBannerTypeChange(this)"> 슬라이드
+            </label>
+          </div>
+        </div>
+
+        <div class="editor-block">
+          <div class="editor-block-label">디바이스별 소재</div>
+          <div class="device-tabs">
+            <button class="device-tab active">모바일</button>
+            <button class="device-tab">PC</button>
+          </div>
+          <div class="img-upload">+ 이미지 업로드 (800×600 권장)</div>
+        </div>
+
+        <div class="editor-block">
+          <div class="editor-block-label">제목</div>
+          <input type="text" class="input-text" id="bannerTitle" value="지금 가입하면 첫 구매 5% 할인" oninput="updatePreview()" style="min-width:100%;">
+        </div>
+
+        <div class="editor-block">
+          <div class="editor-block-label">본문</div>
+          <textarea class="textarea" id="bannerBody" oninput="updatePreview()">가입하고 바로 쓸 수 있는 쿠폰을 드려요.</textarea>
+        </div>
+
+        <div class="editor-block">
+          <div class="editor-block-label">CTA 버튼</div>
+          <div class="editor-grid-2">
+            <input type="text" class="input-text" id="ctaLabel" value="가입하고 쿠폰 받기" oninput="updatePreview()" placeholder="버튼 문구">
+            <div class="dropdown">
+              <button class="chip" onclick="toggleDropdown(event,'dd-click')" style="width:100%;justify-content:space-between;">
+                <span id="lbl-click">링크 이동</span>
+                <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="dropdown-menu" id="dd-click">
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-click','lbl-click','링크 이동')">링크 이동</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-click','lbl-click','쿠폰 발급')">쿠폰 발급</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-click','lbl-click','앱 설치 유도')">앱 설치 유도</div>
+                <div class="dropdown-menu-item" onclick="selectDropdown('dd-click','lbl-click','카카오 채널 추가')">카카오 채널 추가</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-block">
+          <div class="editor-block-label">목표 지표</div>
+          <div class="radio-group-inline">
+            <label class="radio-item">
+              <input type="radio" name="goal" value="click-purchase" checked> 클릭 → 구매 전환
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="goal" value="impression-purchase"> 노출 → 구매 전환
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 우: 프리뷰 -->
+      <div class="content-right">
+        <div class="content-right-label">실시간 미리보기</div>
+        <div class="phone-frame">
+          <div class="phone-topbar"><div class="phone-topbar-notch"></div></div>
+          <div class="phone-page">
+            <div class="phone-page-title">쇼핑몰 페이지</div>
+            <div class="phone-page-skeleton short"></div>
+            <div class="phone-page-skeleton grid">
+              <div></div><div></div><div></div><div></div>
+            </div>
+
+            <!-- 실제 배너 프리뷰 -->
+            <div class="banner banner-popup" id="previewPopup">
+              <svg class="banner-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              <div class="banner-img">배너 이미지</div>
+              <div class="banner-title" id="pvTitle">지금 가입하면 첫 구매 5% 할인</div>
+              <div class="banner-body" id="pvBody">가입하고 바로 쓸 수 있는 쿠폰을 드려요.</div>
+              <div class="banner-cta" id="pvCta">가입하고 쿠폰 받기</div>
+            </div>
+            <div class="banner banner-bar" id="previewBar" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ Coverage Footer (PRD 설명 장치) ══════════ -->
+  <div class="coverage-footer">
+    <div class="icon">✓</div>
+    <div>
+      <strong>이 빌더 하나로 실무 시나리오 20개를 전부 표현할 수 있어요.</strong><br>
+      대상·트리거·조건·노출페이지·기간·피로도 <strong>6축의 조합</strong>으로 구성돼 있고, 새 데이터가 추가되면 각 축의 선택지만 늘어날 뿐 빌더 구조는 그대로 유지돼요. <em style="color:#9ea1a7;">(As-Is 커버리지 ~35% → To-Be 100%)</em>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ─── State ──────────────────────────────
+  const state = {
+    conditions: [],  // { key, label, value }
+  };
+
+  const CONDITION_OPTIONS = [
+    // 유입 출처
+    { key: 'entry_channel', group: '유입 출처', label: '유입 채널',
+      values: ['네이버 검색','구글 검색','카카오 광고','메타 광고(FB/IG)','유튜브 광고','인스타그램','유튜브','이메일 링크','알림톡/친구톡','블로그·카페','가격비교 사이트','직접 유입(URL 직접 입력)','북마크'] },
+    { key: 'entry_keyword', group: '유입 출처', label: '유입 검색어',
+      values: ['"할인" 포함','"쿠폰" 포함','"세일" 포함','브랜드명 포함','상품명 포함','직접 입력…'] },
+    { key: 'landing', group: '유입 출처', label: '랜딩 페이지',
+      values: ['홈','상품 상세','카테고리 목록','이벤트 페이지','검색 결과','기타'] },
+
+    // 참여도
+    { key: 'dwell', group: '참여도', label: '현재 페이지 체류 시간',
+      values: ['10초 이상','30초 이상','1분 이상','3분 이상','5분 이상','10분 이상'] },
+    { key: 'scroll', group: '참여도', label: '스크롤 깊이',
+      values: ['20% 이상','40% 이상','60% 이상','80% 이상','100% (최하단 도달)'] },
+    { key: 'distinct_pageview', group: '참여도', label: '세션 내 서로 다른 페이지 수',
+      values: ['3개 이상','5개 이상','10개 이상'] },
+    { key: 'distinct_product', group: '참여도', label: '세션 내 서로 다른 상품 조회 수',
+      values: ['1개 이상','3개 이상','5개 이상','10개 이상'] },
+    { key: 'distinct_category', group: '참여도', label: '세션 내 서로 다른 카테고리 수',
+      values: ['2개 이상','3개 이상','5개 이상'] },
+    { key: 'total_pageview', group: '참여도', label: '세션 내 총 페이지뷰',
+      values: ['3회 이상','5회 이상','10회 이상'] },
+
+    // 이탈 신호
+    { key: 'exit', group: '이탈 신호', label: '이탈 감지',
+      values: ['마우스 이탈 (데스크톱)','상단 스와이프 (모바일)','뒤로가기 시도','탭 전환 (창 비활성)','5초 이상 비활성'] },
+
+    // 방문 이력
+    { key: 'session_count', group: '방문 이력', label: '누적 방문 횟수',
+      values: ['첫 방문','2회 이상','3회 이상','5회 이상','10회 이상'] },
+    { key: 'last_visit', group: '방문 이력', label: '마지막 방문 시점',
+      values: ['오늘 재방문','7일 이내 재방문','30일 이내 재방문','30일 이상 미방문','90일 이상 미방문'] },
+
+    // 장바구니 상태
+    { key: 'cart_amount', group: '장바구니 상태', label: '장바구니 금액',
+      values: ['담긴 상품 없음','1만원 이상','3만원 이상','5만원 이상','10만원 이상','20만원 이상','무료배송 기준 미달'] },
+    { key: 'cart_count', group: '장바구니 상태', label: '장바구니 상품 수',
+      values: ['1개 이상','3개 이상','5개 이상','10개 이상'] },
+    { key: 'cart_category', group: '장바구니 상태', label: '장바구니 포함 카테고리',
+      values: ['아우터 포함','상의 포함','뷰티 포함','리빙 포함','식품 포함'] },
+
+    // 디바이스·환경
+    { key: 'device', group: '디바이스·환경', label: '디바이스',
+      values: ['모바일 (iOS)','모바일 (Android)','태블릿','PC (Windows)','PC (Mac)'] },
+    { key: 'platform', group: '디바이스·환경', label: '접속 경로',
+      values: ['웹 브라우저','자사 앱','인앱 브라우저 (카톡/인스타/페북)'] },
+    { key: 'time', group: '디바이스·환경', label: '접속 시간대',
+      values: ['평일 오전 (06-12)','평일 낮 (12-18)','평일 저녁 (18-24)','심야 (00-06)','주말','퇴근 시간 (17-19)'] },
+  ];
+
+  // ─── Dropdown ───────────────────────────
+  function toggleDropdown(e, id) {
+    e.stopPropagation();
+    document.querySelectorAll('.dropdown-menu.open').forEach(el => {
+      if (el.id !== id) el.classList.remove('open');
+    });
+    const menu = document.getElementById(id);
+    const willOpen = !menu.classList.contains('open');
+    if (willOpen) {
+      const btn = e.currentTarget;
+      const rect = btn.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + 'px';
+      menu.style.left = rect.left + 'px';
+      // 화면 오른쪽 넘침 보정
+      menu.classList.add('open');
+      const menuRect = menu.getBoundingClientRect();
+      if (menuRect.right > window.innerWidth - 8) {
+        menu.style.left = Math.max(8, window.innerWidth - menuRect.width - 8) + 'px';
+      }
+      // 화면 아래 넘침 보정 (버튼 위로 띄움)
+      if (menuRect.bottom > window.innerHeight - 8) {
+        const above = rect.top - menuRect.height - 4;
+        if (above > 8) menu.style.top = above + 'px';
+      }
+    } else {
+      menu.classList.remove('open');
+    }
+  }
+  function selectDropdown(ddId, labelId, value) {
+    document.getElementById(labelId).textContent = value;
+    document.getElementById(ddId).classList.remove('open');
+    updateSummaries();
+  }
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-menu.open').forEach(el => el.classList.remove('open'));
+  });
+
+  // ─── Card activation ────────────────────
+  function activateCard(id) {
+    document.querySelectorAll('.step-card').forEach(c => {
+      c.classList.remove('active');
+      c.querySelector('.step-badge').classList.remove('active');
+    });
+    const card = document.getElementById(id);
+    card.classList.add('active');
+    card.querySelector('.step-badge').classList.add('active');
+  }
+
+  // ─── 트리거 선택 (페이지 경로 / 행동 / 전환) ─
+  function selectTrigger(value) {
+    document.getElementById('lbl-trigger').textContent = value;
+    document.getElementById('dd-trigger').classList.remove('open');
+    // 모든 상세 블록 숨김
+    document.getElementById('triggerHint-path').style.display = 'none';
+    document.getElementById('triggerDetail-action').style.display = 'none';
+    document.getElementById('triggerDetail-conversion').style.display = 'none';
+    if (value === '페이지 경로') {
+      document.getElementById('triggerHint-path').style.display = '';
+    } else if (value === '행동 이벤트') {
+      document.getElementById('triggerDetail-action').style.display = '';
+    } else if (value === '전환 이벤트') {
+      document.getElementById('triggerDetail-conversion').style.display = '';
+    }
+    updateSummaries();
+  }
+
+  function onActionScopeChange(radio) {
+    document.getElementById('actionProductPick').style.display =
+      radio.value === 'specific' ? 'inline-block' : 'none';
+    if (radio.value === 'all') {
+      document.getElementById('lbl-action-product').textContent = '상품·카테고리 선택';
+    }
+    updateSummaries();
+  }
+
+  // ─── 전환 이벤트 상세 조건 ─────────────
+  const CONV_CONDITIONS = [
+    { key: 'amount', label: '주문 금액', values: ['1만원 이상','3만원 이상','5만원 이상','10만원 이상'] },
+    { key: 'first', label: '첫 구매 여부', values: ['첫 구매','재구매'] },
+    { key: 'product', label: '특정 상품 포함', values: ['아우터 카테고리','뷰티 카테고리','리빙 카테고리','상품 직접 지정'] },
+  ];
+  let convConds = [];
+  function addConvCondition() {
+    const wrap = document.getElementById('convConditions');
+    document.getElementById('convConditionsEmpty').style.display = 'none';
+    const id = 'cc-' + Date.now();
+    const hasExisting = convConds.length > 0;
+    const el = document.createElement('div');
+    el.id = id;
+    el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;';
+    el.innerHTML = `
+      ${hasExisting ? '<span class="and-tag">AND</span>' : ''}
+      <div class="dropdown">
+        <button class="chip" onclick="toggleDropdown(event,'${id}-k')">
+          <span id="${id}-kl">조건 선택</span>
+          <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dropdown-menu" id="${id}-k">
+          ${CONV_CONDITIONS.map(o => `<div class="dropdown-menu-item" onclick="pickConvKey('${id}','${o.key}','${o.label}')">${o.label}</div>`).join('')}
+        </div>
+      </div>
+      <div class="dropdown" id="${id}-vw" style="display:none;">
+        <button class="chip purple" onclick="toggleDropdown(event,'${id}-v')">
+          <span id="${id}-vl">값 선택</span>
+          <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dropdown-menu" id="${id}-v"></div>
+      </div>
+      <button onclick="removeConvCondition('${id}')" style="background:transparent;border:none;cursor:pointer;color:#9ea1a7;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    wrap.appendChild(el);
+    convConds.push({ id, key: null, value: null });
+  }
+  function pickConvKey(id, key, label) {
+    const opt = CONV_CONDITIONS.find(o => o.key === key);
+    document.getElementById(id + '-kl').textContent = label;
+    document.getElementById(id + '-k').classList.remove('open');
+    document.getElementById(id + '-vw').style.display = '';
+    document.getElementById(id + '-v').innerHTML = opt.values.map(v =>
+      `<div class="dropdown-menu-item" onclick="pickConvVal('${id}','${v}')">${v}</div>`
+    ).join('');
+    const c = convConds.find(x => x.id === id);
+    if (c) c.key = key;
+  }
+  function pickConvVal(id, v) {
+    document.getElementById(id + '-vl').textContent = v;
+    document.getElementById(id + '-v').classList.remove('open');
+    const c = convConds.find(x => x.id === id);
+    if (c) c.value = v;
+  }
+  function removeConvCondition(id) {
+    document.getElementById(id).remove();
+    convConds = convConds.filter(c => c.id !== id);
+    if (convConds.length === 0) {
+      document.getElementById('convConditionsEmpty').style.display = '';
+    }
+  }
+
+  // ─── 대상 / 오디언스 ─────────────────────
+  function onScopeChange(radio) {
+    document.getElementById('audienceRow').style.display =
+      radio.value === 'member' ? 'flex' : 'none';
+    if (radio.value !== 'member') {
+      document.getElementById('lbl-audience').textContent = '오디언스 선택';
+    }
+    updateSummaries();
+  }
+
+  // ─── 기간 ───────────────────────────────
+  function onPeriodChange(radio) {
+    document.getElementById('periodRange').style.display =
+      radio.value === 'range' ? 'flex' : 'none';
+    updateSummaries();
+  }
+
+  // ─── 조건 메뉴 HTML (그룹화) ─────────────
+  function conditionMenuHtml(rowId) {
+    const groups = {};
+    CONDITION_OPTIONS.forEach(o => { (groups[o.group] = groups[o.group] || []).push(o); });
+    return Object.entries(groups).map(([g, items]) =>
+      `<div class="dropdown-menu-group">${g}</div>` +
+      items.map(o => `<div class="dropdown-menu-item" onclick="selectConditionKey('${rowId}','${o.key}','${o.label.replace(/'/g,"&#39;")}')">${o.label}</div>`).join('')
+    ).join('');
+  }
+
+  // ─── 조건 (AND 누적) ────────────────────
+  function addCondition() {
+    const list = document.getElementById('conditionList');
+    const empty = document.getElementById('conditionEmpty');
+    if (empty) empty.style.display = 'none';
+
+    const rowId = 'cond-' + Date.now();
+    const hasExisting = state.conditions.length > 0;
+    const row = document.createElement('div');
+    row.className = 'condition-row';
+    row.id = rowId;
+    row.innerHTML = `
+      ${hasExisting ? '<span class="and-tag">AND</span>' : ''}
+      <div class="dropdown">
+        <button class="chip" onclick="toggleDropdown(event,'${rowId}-key-menu')">
+          <span id="${rowId}-key-label">조건 선택</span>
+          <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dropdown-menu" id="${rowId}-key-menu" style="min-width:280px;max-height:440px;overflow-y:auto;">
+          ${conditionMenuHtml(rowId)}
+        </div>
+      </div>
+      <span class="suffix" id="${rowId}-mid" style="display:none;">이</span>
+      <div class="dropdown" id="${rowId}-val-wrap" style="display:none;">
+        <button class="chip" onclick="toggleDropdown(event,'${rowId}-val-menu')">
+          <span id="${rowId}-val-label">값 선택</span>
+          <svg class="chip-arrow" viewBox="0 0 20 20" fill="none"><path d="M5 7l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dropdown-menu" id="${rowId}-val-menu"></div>
+      </div>
+      <button class="icon-btn" onclick="removeCondition('${rowId}')" style="background:transparent;border:none;cursor:pointer;color:#9ea1a7;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    const addBtn = list.querySelector('.btn-add');
+    list.insertBefore(row, addBtn);
+    state.conditions.push({ id: rowId, key: null, value: null });
+  }
+  function selectConditionKey(rowId, key, label) {
+    const opt = CONDITION_OPTIONS.find(o => o.key === key);
+    document.getElementById(rowId + '-key-label').textContent = label;
+    document.getElementById(rowId + '-key-menu').classList.remove('open');
+    document.getElementById(rowId + '-mid').style.display = '';
+    const wrap = document.getElementById(rowId + '-val-wrap');
+    wrap.style.display = '';
+    const menu = document.getElementById(rowId + '-val-menu');
+    menu.style.maxHeight = '400px';
+    menu.style.overflowY = 'auto';
+    menu.style.minWidth = '220px';
+    menu.innerHTML = opt.values.map(v =>
+      `<div class="dropdown-menu-item" onclick="selectConditionValue('${rowId}','${v.replace(/'/g,"&#39;")}')">${v}</div>`
+    ).join('');
+    const cond = state.conditions.find(c => c.id === rowId);
+    if (cond) { cond.key = key; cond.keyLabel = label; }
+    updateSummaries();
+  }
+  function selectConditionValue(rowId, value) {
+    document.getElementById(rowId + '-val-label').textContent = value;
+    document.getElementById(rowId + '-val-menu').classList.remove('open');
+    const cond = state.conditions.find(c => c.id === rowId);
+    if (cond) cond.value = value;
+    updateSummaries();
+  }
+  function removeCondition(rowId) {
+    document.getElementById(rowId).remove();
+    state.conditions = state.conditions.filter(c => c.id !== rowId);
+    if (state.conditions.length === 0) {
+      document.getElementById('conditionEmpty').style.display = '';
+    }
+    updateSummaries();
+  }
+
+  // ─── 배너 프리뷰 ────────────────────────
+  function updatePreview() {
+    const title = document.getElementById('bannerTitle').value;
+    const body = document.getElementById('bannerBody').value;
+    const cta = document.getElementById('ctaLabel').value;
+    document.getElementById('pvTitle').textContent = title || '제목';
+    document.getElementById('pvBody').textContent = body || '본문';
+    document.getElementById('pvCta').textContent = cta || 'CTA';
+  }
+  function onBannerTypeChange(radio) {
+    const popup = document.getElementById('previewPopup');
+    const bar = document.getElementById('previewBar');
+    if (radio.value === 'popup' || radio.value === 'slide') {
+      popup.style.display = '';
+      bar.style.display = 'none';
+    } else {
+      popup.style.display = 'none';
+      bar.style.display = '';
+      bar.textContent = document.getElementById('bannerTitle').value || '하단 바';
+    }
+  }
+
+  // ─── Summaries (접힘 상태 표시용) ───────
+  function updateSummaries() {
+    const scope = document.querySelector('input[name="audience-scope"]:checked').value;
+    const scopeLabel = {all:'모든 방문자', member:'회원', nonmember:'비회원'}[scope];
+    const aud = document.getElementById('lbl-audience').textContent;
+    const trig = document.getElementById('lbl-trigger').textContent;
+    const condCount = state.conditions.filter(c => c.key && c.value).length;
+    let s1 = scopeLabel;
+    if (scope === 'member' && aud !== '오디언스 선택') s1 += ' · ' + aud;
+    // 트리거 상세 요약
+    let trigLabel = trig;
+    if (trig === '행동 이벤트') {
+      const ev = document.getElementById('lbl-action-event').textContent;
+      trigLabel = '이벤트: ' + ev;
+    } else if (trig === '전환 이벤트') {
+      const ev = document.getElementById('lbl-conv-event').textContent;
+      trigLabel = '전환: ' + ev;
+    }
+    s1 += ' · ' + trigLabel;
+    if (condCount > 0) s1 += ' · 조건 ' + condCount + '개';
+    document.getElementById('summary1').textContent = s1;
+
+    const period = document.querySelector('input[name="period"]:checked').value;
+    const fat = document.getElementById('lbl-fatigue').textContent;
+    const fatC = document.getElementById('fatigueCount').value;
+    document.getElementById('summary2').textContent =
+      (period === 'always' ? '상시' : '기간 설정') + ' · ' + fat + ' ' + fatC + '회';
+  }
+
+  // ─── Scenario Prefill ───────────────────
+  const SCENARIOS = {
+    basic: {
+      name: '사이트 전체 프로모션 배너',
+      scope: 'all', audience: null, trigger: '페이지 경로',
+      conditions: [],
+      period: 'always', fatigue: ['세션당', 1], priority: '자동',
+      include: '사이트 전체',
+      bannerType: 'bar',
+      title: '전 상품 10% 할인 중', body: '오늘만! 지금 바로 둘러보세요.', cta: '혜택 보러가기',
+    },
+    nonmember: {
+      name: '비회원 가입 유도',
+      scope: 'nonmember', audience: null, trigger: '페이지 경로',
+      conditions: [],
+      period: 'always', fatigue: ['주당', 1], priority: '보통',
+      include: '상품 상세',
+      bannerType: 'popup',
+      title: '가입하고 첫 구매 5% 쿠폰 받기', body: '1분이면 가입 완료. 바로 사용할 수 있어요.', cta: '가입하고 쿠폰 받기',
+    },
+    vip: {
+      name: 'VIP 전용 혜택',
+      scope: 'member', audience: 'VIP 고객', trigger: '페이지 경로',
+      conditions: [],
+      period: 'range', fatigue: ['일당', 1], priority: '높음',
+      include: '홈',
+      bannerType: 'popup',
+      title: 'VIP 전용 20% 쿠폰이 도착했어요', body: '이번 주 주문 건에 한해 사용 가능해요.', cta: '쿠폰 받기',
+    },
+    'cart-crosssell': {
+      name: '담기 직후 교차판매',
+      scope: 'all', audience: null,
+      trigger: '행동 이벤트',
+      triggerDetails: { event: '장바구니 담기', productScope: 'all' },
+      conditions: [],
+      period: 'always', fatigue: ['세션당', 1], priority: '보통',
+      include: '상품 상세',
+      bannerType: 'popup',
+      title: '함께 구매하면 좋은 상품', body: '방금 담으신 상품과 잘 어울리는 추천 상품이에요.', cta: '추천 상품 보기',
+    },
+    'cart-exit': {
+      name: '장바구니 이탈 감지 리마인드',
+      scope: 'all', audience: null, trigger: '페이지 경로',
+      conditions: [
+        { key: 'exit', value: '마우스 이탈 (데스크톱)' },
+        { key: 'cart_amount', value: '5만원 이상' },
+      ],
+      period: 'always', fatigue: ['세션당', 1], priority: '높음',
+      include: '장바구니',
+      bannerType: 'popup',
+      title: '지금 주문하면 무료배송!', body: '장바구니에 담긴 상품, 오늘 주문하면 바로 발송돼요.', cta: '주문 완료하기',
+    },
+    'engaged-firstvisit': {
+      name: '첫 방문 + 고관여 가입 푸시',
+      scope: 'nonmember', audience: null, trigger: '페이지 경로',
+      conditions: [
+        { key: 'session_count', value: '첫 방문' },
+        { key: 'dwell', value: '3분 이상' },
+        { key: 'scroll', value: '60% 이상' },
+      ],
+      period: 'always', fatigue: ['사용자당', 1], priority: '보통',
+      include: '사이트 전체',
+      bannerType: 'popup',
+      title: '우리 쇼핑몰이 마음에 드셨군요!', body: '가입하고 이번 한 번만 드리는 특별 쿠폰 받아가세요.', cta: '가입하고 시작하기',
+    },
+  };
+
+  function resetAll() {
+    document.querySelectorAll('.scenario-btn.active').forEach(b => b.classList.remove('active'));
+    document.getElementById('campaignName').textContent = '새 온사이트 캠페인';
+    // 대상
+    document.querySelector('input[name="audience-scope"][value="all"]').checked = true;
+    onScopeChange(document.querySelector('input[name="audience-scope"][value="all"]'));
+    document.getElementById('lbl-audience').textContent = '오디언스 선택';
+    // 트리거
+    selectTrigger('페이지 경로');
+    document.querySelector('input[name="action-product-scope"][value="all"]').checked = true;
+    onActionScopeChange(document.querySelector('input[name="action-product-scope"][value="all"]'));
+    document.getElementById('lbl-action-event').textContent = '장바구니 담기';
+    document.getElementById('lbl-conv-event').textContent = '구매 완료';
+    convConds.slice().forEach(c => removeConvCondition(c.id));
+    // 조건 비우기
+    state.conditions.slice().forEach(c => removeCondition(c.id));
+    // 노출 페이지
+    document.getElementById('lbl-include').textContent = '사이트 전체';
+    // 기간
+    document.querySelector('input[name="period"][value="always"]').checked = true;
+    onPeriodChange(document.querySelector('input[name="period"][value="always"]'));
+    // 피로도
+    document.getElementById('lbl-fatigue').textContent = '세션당';
+    document.getElementById('fatigueCount').value = 1;
+    // 콘텐츠
+    document.querySelector('input[name="banner-type"][value="popup"]').checked = true;
+    onBannerTypeChange(document.querySelector('input[name="banner-type"][value="popup"]'));
+    document.getElementById('bannerTitle').value = '지금 가입하면 첫 구매 5% 할인';
+    document.getElementById('bannerBody').value = '가입하고 바로 쓸 수 있는 쿠폰을 드려요.';
+    document.getElementById('ctaLabel').value = '가입하고 쿠폰 받기';
+    updatePreview();
+    updateSummaries();
+    activateCard('card1');
+  }
+
+  function loadScenario(key, btn) {
+    resetAll();
+    document.querySelectorAll('.scenario-btn.active').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const s = SCENARIOS[key];
+    document.getElementById('campaignName').textContent = s.name;
+
+    // 대상
+    document.querySelector(`input[name="audience-scope"][value="${s.scope}"]`).checked = true;
+    onScopeChange(document.querySelector(`input[name="audience-scope"][value="${s.scope}"]`));
+    if (s.audience) {
+      document.getElementById('lbl-audience').textContent = s.audience;
+    }
+
+    // 트리거 + 상세
+    selectTrigger(s.trigger);
+    if (s.trigger === '행동 이벤트' && s.triggerDetails) {
+      document.getElementById('lbl-action-event').textContent = s.triggerDetails.event;
+      const scopeVal = s.triggerDetails.productScope === 'specific' ? 'specific' : 'all';
+      document.querySelector(`input[name="action-product-scope"][value="${scopeVal}"]`).checked = true;
+      onActionScopeChange(document.querySelector(`input[name="action-product-scope"][value="${scopeVal}"]`));
+      if (s.triggerDetails.product) {
+        document.getElementById('lbl-action-product').textContent = s.triggerDetails.product;
+      }
+    } else if (s.trigger === '전환 이벤트' && s.triggerDetails) {
+      document.getElementById('lbl-conv-event').textContent = s.triggerDetails.event;
+    }
+
+    // 조건
+    s.conditions.forEach(c => {
+      const opt = CONDITION_OPTIONS.find(o => o.key === c.key);
+      if (!opt) { console.warn('시나리오 조건 키 매칭 실패:', c.key); return; }
+      addCondition();
+      const last = state.conditions[state.conditions.length - 1];
+      selectConditionKey(last.id, opt.key, opt.label);
+      selectConditionValue(last.id, c.value);
+    });
+
+    // 노출 페이지
+    document.getElementById('lbl-include').textContent = s.include;
+
+    // 기간
+    document.querySelector(`input[name="period"][value="${s.period}"]`).checked = true;
+    onPeriodChange(document.querySelector(`input[name="period"][value="${s.period}"]`));
+    if (s.period === 'range') {
+      document.getElementById('periodStart').value = '2026-04-20';
+      document.getElementById('periodEnd').value = '2026-04-30';
+    }
+
+    // 피로도
+    document.getElementById('lbl-fatigue').textContent = s.fatigue[0];
+    document.getElementById('fatigueCount').value = s.fatigue[1];
+
+    // 콘텐츠
+    document.querySelector(`input[name="banner-type"][value="${s.bannerType}"]`).checked = true;
+    onBannerTypeChange(document.querySelector(`input[name="banner-type"][value="${s.bannerType}"]`));
+    document.getElementById('bannerTitle').value = s.title;
+    document.getElementById('bannerBody').value = s.body;
+    document.getElementById('ctaLabel').value = s.cta;
+    updatePreview();
+    updateSummaries();
+  }
+
+  // Init
+  updateSummaries();
+</script>
+</body>
+</html>
