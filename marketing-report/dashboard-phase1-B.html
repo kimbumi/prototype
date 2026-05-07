@@ -645,18 +645,6 @@
   <!-- ===== Main ===== -->
   <main class="main">
 
-    <!-- ===== 프론트 개발 명세 메모 (구현 시 제거) ===== -->
-    <div class="dev-memo">
-      <strong>프론트 개발 명세</strong>
-      <ul>
-        <li><strong>기간 정책</strong>: 전주 월~일 고정 (조회일 기준 직전 주). MVP에서 기간 필터 미제공.</li>
-        <li><strong>진입 분기</strong>: 캠페인 실행 이력 0건 → 빈 상태 (캠페인 생성 진입). 1건 이상 → 리포트 표시.</li>
-        <li><strong>가설 Y (통합 정책)</strong>: 절대값(전환수·전환금액)만 ONS+MSG 합산. 비율(전환율·ROAS)·비용은 채널별 분리. CRM 통합 ROAS·attribution은 base 다름으로 미제공.</li>
-        <li><strong>채널 노출 분기</strong>: 사용 안 하는 채널은 노출 X (ONS만 / MSG만 / 둘 다).</li>
-        <li><strong>1차 판단 시그널</strong>: KPI·채널별 직전 기간 대비 ▲▼ 표시 (잘 흘러가는지 1차 판단용).</li>
-        <li><strong>다운로드 X</strong>: 리포트 다운로드는 스펙 아웃 (PO 합의 5/6).</li>
-      </ul>
-    </div>
 
     <!-- Page header -->
     <div class="page-header">
@@ -896,15 +884,14 @@
               <tr>
                 <th>캠페인명</th>
                 <th class="right">전환 금액</th>
-                <th class="right">변화</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>신상품 추천 배너</td><td class="right">₩1,900,000</td><td class="right"><span class="delta-up">▲ 18%</span></td></tr>
-              <tr><td>주말 한정 이벤트</td><td class="right">₩680,000</td><td class="right"><span class="delta-up">▲ 11%</span></td></tr>
-              <tr><td>여름 시즌 오픈</td><td class="right">₩320,000</td><td class="right delta-flat">─</td></tr>
-              <tr><td>회원 등급 안내 배너</td><td class="right">₩180,000</td><td class="right"><span class="delta-down">▼ 4%</span></td></tr>
-              <tr><td>앱 다운로드 유도</td><td class="right">₩90,000</td><td class="right"><span class="delta-up">▲ 7%</span></td></tr>
+              <tr><td>신상품 추천 배너</td><td class="right">₩1,900,000</td></tr>
+              <tr><td>주말 한정 이벤트</td><td class="right">₩680,000</td></tr>
+              <tr><td>여름 시즌 오픈</td><td class="right">₩320,000</td></tr>
+              <tr><td>회원 등급 안내 배너</td><td class="right">₩180,000</td></tr>
+              <tr><td>앱 다운로드 유도</td><td class="right">₩90,000</td></tr>
             </tbody>
           </table>
         </div>
@@ -959,16 +946,15 @@
             <thead>
               <tr>
                 <th>캠페인명</th>
-                <th class="right">매출</th>
-                <th class="right">ROAS</th>
+                <th class="right">전환 금액</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>봄맞이 프로모션</td><td class="right">₩4,500,000</td><td class="right">62.3</td></tr>
-              <tr><td>회원가입 환영</td><td class="right">₩2,100,000</td><td class="right">71.5</td></tr>
-              <tr><td>장바구니 리마인드</td><td class="right">₩1,540,000</td><td class="right">58.4</td></tr>
-              <tr><td>VIP 회원 혜택</td><td class="right">₩1,290,000</td><td class="right">60.0</td></tr>
-              <tr><td>이탈 고객 재방문</td><td class="right">₩820,000</td><td class="right">55.2</td></tr>
+              <tr><td>봄맞이 프로모션</td><td class="right">₩4,500,000</td></tr>
+              <tr><td>회원가입 환영</td><td class="right">₩2,100,000</td></tr>
+              <tr><td>장바구니 리마인드</td><td class="right">₩1,540,000</td></tr>
+              <tr><td>VIP 회원 혜택</td><td class="right">₩1,290,000</td></tr>
+              <tr><td>이탈 고객 재방문</td><td class="right">₩820,000</td></tr>
             </tbody>
           </table>
         </div>
