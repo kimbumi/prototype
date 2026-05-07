@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>마케팅 성과 리포트 — Dashboard v1</title>
+<title>마케팅 성과 리포트 — Dashboard v2 (훑기 중심)</title>
 <style>
   /* ===== Foundation 1.2 tokens ===== */
   :root {
@@ -402,6 +402,49 @@
   .delta-flat { color: var(--text-tertiary); }
   .alert-icon { color: var(--icon-warning); margin-left: var(--sp-1); }
 
+  /* ===== Channel summary (v2 — 한 줄 요약) ===== */
+  .channel-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+  .channel-summary-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-xl);
+    padding: var(--sp-10) var(--sp-12);
+  }
+  .channel-summary-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-8);
+  }
+  .channel-summary-header .channel-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .channel-summary-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: var(--sp-6);
+  }
+  .metric-block { display: flex; flex-direction: column; gap: var(--sp-1); }
+  .metric-label { font-size: 11px; color: var(--text-tertiary); }
+  .metric-value { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.03em; }
+  .metric-delta { font-size: 11px; }
+  .metric-delta .delta-up { color: var(--text-success); font-weight: 500; }
+  .metric-delta .delta-down { color: var(--text-danger); font-weight: 500; }
+  .metric-delta.delta-flat { color: var(--text-tertiary); }
+
+  /* See-all link */
+  .see-all {
+    margin-top: var(--sp-8);
+    padding-top: var(--sp-6);
+    border-top: 1px solid var(--border-default);
+    text-align: center;
+  }
+  .see-all a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .see-all a:hover { color: var(--text-brand); }
+
   /* ===== Header phase note (디자인 메모용) ===== */
   .design-note {
     background: var(--bg-warning-subtle);
@@ -449,7 +492,7 @@
 
     <!-- Design note (디자인 검토용 — 나중에 제거) -->
     <div class="design-note">
-      <strong>디자인 메모</strong> · Phase 1 마케팅 성과 리포트 (Dashboard 본질). 분석 → 채널·캠페인 비교 → 보고서 출력. 인사이트 카드는 Phase 2~3에서 추가.
+      <strong>디자인 메모 (시안 2안 — 훑기 중심)</strong> · 분석·보고서 X. 가볍게 KPI · 채널별 요약 · Top 캠페인만. 캡쳐해서 보고에 그대로 활용 가능한 응축 형태.
     </div>
 
     <!-- Page header -->
@@ -503,118 +546,72 @@
       </div>
     </section>
 
-    <!-- ===== Channel cards ===== -->
+    <!-- ===== Channel summary (간소화) ===== -->
     <section class="section">
       <div class="section-header">
         <span class="section-icon">📨</span>
-        <span class="section-title">채널별 분석</span>
+        <span class="section-title">채널별 요약</span>
       </div>
-      <div class="channel-grid">
+      <div class="channel-summary-grid">
 
-        <!-- MSG -->
-        <div class="channel-card">
-          <div class="channel-header">
-            <div class="channel-title">
-              <span class="channel-badge msg">MSG</span>
-              <span class="channel-name">메시지 캠페인</span>
-            </div>
-            <a class="channel-link" href="#">상세 보기 →</a>
+        <!-- MSG 한 줄 요약 -->
+        <div class="channel-summary-card">
+          <div class="channel-summary-header">
+            <span class="channel-badge msg">MSG</span>
+            <span class="channel-name">메시지 캠페인</span>
+            <a class="channel-link" href="#">상세 →</a>
           </div>
-          <div class="funnel">
-            <div class="funnel-step">
-              <div class="funnel-label">발송</div>
-              <div class="funnel-value">8,140</div>
-              <div class="funnel-delta delta-flat">─</div>
+          <div class="channel-summary-metrics">
+            <div class="metric-block">
+              <div class="metric-label">매출</div>
+              <div class="metric-value">₩9.14M</div>
+              <div class="metric-delta"><span class="delta-up">▲ 14%</span></div>
             </div>
-            <div class="funnel-arrow">→</div>
-            <div class="funnel-step">
-              <div class="funnel-label">클릭</div>
-              <div class="funnel-value">692</div>
-              <div class="funnel-delta"><span class="delta-down">▼ 3%</span></div>
+            <div class="metric-block">
+              <div class="metric-label">전환</div>
+              <div class="metric-value">198</div>
+              <div class="metric-delta"><span class="delta-up">▲ 6%</span></div>
             </div>
-            <div class="funnel-arrow">→</div>
-            <div class="funnel-step">
-              <div class="funnel-label">전환</div>
-              <div class="funnel-value">198</div>
-              <div class="funnel-delta"><span class="delta-up">▲ 6%</span></div>
+            <div class="metric-block">
+              <div class="metric-label">ROAS</div>
+              <div class="metric-value">64.4</div>
+              <div class="metric-delta"><span class="delta-up">▲ 2%</span></div>
             </div>
-            <div class="funnel-arrow">→</div>
-            <div class="funnel-step">
-              <div class="funnel-label">매출</div>
-              <div class="funnel-value">₩9.14M</div>
-              <div class="funnel-delta"><span class="delta-up">▲ 14%</span></div>
-            </div>
-          </div>
-          <div class="sub-metrics">
-            <div class="sub-metric">
-              <div class="sub-label">클릭률</div>
-              <div class="sub-value">8.5% <span class="delta-up">▲ 0.3%p</span></div>
-            </div>
-            <div class="sub-metric">
-              <div class="sub-label">전환율</div>
-              <div class="sub-value">28.6% <span class="delta-up">▲ 1.2%p</span></div>
-            </div>
-            <div class="sub-metric">
-              <div class="sub-label">비용</div>
-              <div class="sub-value">₩142,000</div>
-            </div>
-            <div class="sub-metric">
-              <div class="sub-label">ROAS</div>
-              <div class="sub-value">64.4 <span class="delta-up">▲ 2%</span></div>
+            <div class="metric-block">
+              <div class="metric-label">비용</div>
+              <div class="metric-value">₩142K</div>
+              <div class="metric-delta delta-flat">─</div>
             </div>
           </div>
         </div>
 
-        <!-- ONS -->
-        <div class="channel-card">
-          <div class="channel-header">
-            <div class="channel-title">
-              <span class="channel-badge ons">ONS</span>
-              <span class="channel-name">온사이트 캠페인</span>
-            </div>
-            <a class="channel-link" href="#">상세 보기 →</a>
+        <!-- ONS 한 줄 요약 -->
+        <div class="channel-summary-card">
+          <div class="channel-summary-header">
+            <span class="channel-badge ons">ONS</span>
+            <span class="channel-name">온사이트 캠페인</span>
+            <a class="channel-link" href="#">상세 →</a>
           </div>
-          <div class="funnel">
-            <div class="funnel-step">
-              <div class="funnel-label">노출</div>
-              <div class="funnel-value">45,200</div>
-              <div class="funnel-delta"><span class="delta-up">▲ 5%</span></div>
+          <div class="channel-summary-metrics">
+            <div class="metric-block">
+              <div class="metric-label">매출</div>
+              <div class="metric-value">₩3.20M</div>
+              <div class="metric-delta"><span class="delta-up">▲ 10%</span></div>
             </div>
-            <div class="funnel-arrow">→</div>
-            <div class="funnel-step">
-              <div class="funnel-label">클릭</div>
-              <div class="funnel-value">1,200</div>
-              <div class="funnel-delta"><span class="delta-up">▲ 8%</span></div>
+            <div class="metric-block">
+              <div class="metric-label">전환</div>
+              <div class="metric-value">89</div>
+              <div class="metric-delta"><span class="delta-up">▲ 12%</span></div>
             </div>
-            <div class="funnel-arrow">→</div>
-            <div class="funnel-step">
-              <div class="funnel-label">전환</div>
-              <div class="funnel-value">89</div>
-              <div class="funnel-delta"><span class="delta-up">▲ 12%</span></div>
+            <div class="metric-block">
+              <div class="metric-label">노출</div>
+              <div class="metric-value">45,200</div>
+              <div class="metric-delta"><span class="delta-up">▲ 5%</span></div>
             </div>
-            <div class="funnel-arrow">→</div>
-            <div class="funnel-step">
-              <div class="funnel-label">매출</div>
-              <div class="funnel-value">₩3.20M</div>
-              <div class="funnel-delta"><span class="delta-up">▲ 10%</span></div>
-            </div>
-          </div>
-          <div class="sub-metrics">
-            <div class="sub-metric">
-              <div class="sub-label">클릭률</div>
-              <div class="sub-value">2.7% <span class="delta-up">▲ 0.1%p</span></div>
-            </div>
-            <div class="sub-metric">
-              <div class="sub-label">전환율</div>
-              <div class="sub-value">7.4% <span class="delta-up">▲ 0.5%p</span></div>
-            </div>
-            <div class="sub-metric">
-              <div class="sub-label">비용</div>
-              <div class="sub-value">—</div>
-            </div>
-            <div class="sub-metric">
-              <div class="sub-label">ROAS</div>
-              <div class="sub-value">—</div>
+            <div class="metric-block">
+              <div class="metric-label">클릭</div>
+              <div class="metric-value">1,200</div>
+              <div class="metric-delta"><span class="delta-up">▲ 8%</span></div>
             </div>
           </div>
         </div>
@@ -622,92 +619,69 @@
       </div>
     </section>
 
-    <!-- ===== Campaign list ===== -->
+    <!-- ===== Top campaigns (간소) ===== -->
     <section class="section">
       <div class="section-header">
-        <span class="section-icon">📋</span>
-        <span class="section-title">캠페인 리스트</span>
-        <span class="section-meta">전체 12건</span>
+        <span class="section-icon">🏆</span>
+        <span class="section-title">Top 캠페인</span>
+        <span class="section-meta">매출 기준 · 전체 12건 중 5건</span>
       </div>
       <div class="table-card">
-        <div class="table-toolbar">
-          <div class="filter-group">
-            <button class="filter-pill">채널: 전체 <span class="pill-arrow">▾</span></button>
-            <button class="filter-pill">상태: 전체 <span class="pill-arrow">▾</span></button>
-          </div>
-          <div class="filter-group">
-            <button class="filter-pill">정렬: 매출 ▼ <span class="pill-arrow">▾</span></button>
-          </div>
-        </div>
         <table>
           <thead>
             <tr>
+              <th>#</th>
               <th>캠페인명</th>
               <th>채널</th>
-              <th class="right">전환</th>
               <th class="right">매출</th>
-              <th class="right">클릭률</th>
-              <th class="right">ROAS</th>
+              <th class="right">전환</th>
               <th class="right">변화</th>
             </tr>
           </thead>
           <tbody>
             <tr>
+              <td>1</td>
               <td>봄맞이 프로모션</td>
               <td><span class="channel-badge msg">MSG</span></td>
-              <td class="right">89</td>
               <td class="right">₩4,500,000</td>
-              <td class="right">12.1%</td>
-              <td class="right">75.0</td>
+              <td class="right">89</td>
               <td class="right"><span class="delta-badge delta-up">▲ 18%</span></td>
             </tr>
             <tr>
+              <td>2</td>
               <td>회원가입 환영</td>
               <td><span class="channel-badge msg">MSG</span></td>
-              <td class="right">45</td>
               <td class="right">₩2,100,000</td>
-              <td class="right">8.2%</td>
-              <td class="right">52.5</td>
-              <td class="right"><span class="delta-badge delta-down">▼ 25%</span><span class="alert-icon">⚠</span></td>
+              <td class="right">45</td>
+              <td class="right"><span class="delta-badge delta-down">▼ 25%</span></td>
             </tr>
             <tr>
+              <td>3</td>
               <td>신상품 추천 배너</td>
               <td><span class="channel-badge ons">ONS</span></td>
-              <td class="right">34</td>
               <td class="right">₩1,900,000</td>
-              <td class="right">3.4%</td>
-              <td class="right">—</td>
+              <td class="right">34</td>
               <td class="right"><span class="delta-badge delta-up">▲ 11%</span></td>
             </tr>
             <tr>
+              <td>4</td>
               <td>장바구니 리마인드</td>
               <td><span class="channel-badge msg">MSG</span></td>
-              <td class="right">38</td>
               <td class="right">₩1,540,000</td>
-              <td class="right">6.7%</td>
-              <td class="right">47.4</td>
+              <td class="right">38</td>
               <td class="right"><span class="delta-badge delta-flat">─</span></td>
             </tr>
             <tr>
+              <td>5</td>
               <td>VIP 회원 혜택</td>
               <td><span class="channel-badge msg">MSG</span></td>
-              <td class="right">27</td>
               <td class="right">₩1,290,000</td>
-              <td class="right">14.3%</td>
-              <td class="right">68.9</td>
+              <td class="right">27</td>
               <td class="right"><span class="delta-badge delta-up">▲ 5%</span></td>
-            </tr>
-            <tr>
-              <td>이탈 방지 팝업</td>
-              <td><span class="channel-badge ons">ONS</span></td>
-              <td class="right">22</td>
-              <td class="right">₩890,000</td>
-              <td class="right">2.1%</td>
-              <td class="right">—</td>
-              <td class="right"><span class="delta-badge delta-down">▼ 8%</span></td>
             </tr>
           </tbody>
         </table>
+        <div class="see-all"><a class="channel-link" href="#">전체 캠페인 리스트 보기 →</a></div>
       </div>
     </section>
 

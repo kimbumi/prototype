@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>마케팅 성과 리포트 — Dashboard v4 (CRM 상태 리포트, Phase 2)</title>
+<title>마케팅 성과 리포트 — Dashboard v4 (Phase 5 AI 분석·추천)</title>
 <style>
   /* ===== Foundation 1.2 tokens ===== */
   :root {
@@ -739,128 +739,222 @@
   .campaign-table tbody tr:last-child td { border-bottom: none; }
   .campaign-table tbody tr:hover { background: var(--bg-neutral-subtle); cursor: pointer; }
 
-  /* ===== v4 — CRM 상태 리포트 ===== */
-  .status-report-card { background: var(--bg-surface); }
-
-  .status-signal {
+  /* ===== v4 — AI Hero ===== */
+  .ai-hero {
     display: flex;
-    gap: var(--sp-4);
-    align-items: center;
-    padding: var(--sp-8) var(--sp-10);
-    background: var(--bg-success-subtle);
-    border: 1px solid var(--green-200);
-    border-radius: var(--r-md);
-    margin-bottom: var(--sp-10);
+    gap: var(--sp-12);
+    background: linear-gradient(135deg, var(--purple-700) 0%, var(--purple-500) 100%);
+    border-radius: var(--r-xl);
+    padding: var(--sp-12) var(--sp-16);
+    color: var(--text-inverse);
   }
-  .status-signal-warn {
-    background: var(--bg-warning-subtle);
-    border-color: var(--amber-200);
+  .ai-hero-left { flex: 1; }
+  .ai-hero-right { width: 360px; }
+  .ai-badge {
+    display: inline-block;
+    padding: var(--sp-2) var(--sp-4);
+    background: rgba(255,255,255,0.18);
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: var(--sp-4);
   }
-  .status-signal-danger {
-    background: var(--bg-danger-subtle);
-    border-color: var(--red-200);
-  }
-  .status-icon {
+  .ai-hero-title {
     font-size: 22px;
-    flex-shrink: 0;
-  }
-  .status-body { flex: 1; }
-  .status-headline {
-    font-size: 16px;
     font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: var(--sp-2);
+    line-height: 1.4;
+    letter-spacing: -0.03em;
+    margin-bottom: var(--sp-3);
   }
-  .status-headline strong { color: var(--text-warning); }
-  .status-sub {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-  .status-sub strong { color: var(--text-warning); font-weight: 600; }
+  .ai-hero-meta { font-size: 13px; opacity: 0.85; }
 
-  /* 지표 비교 grid */
-  .status-metric-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: var(--sp-4);
-    margin-bottom: var(--sp-10);
-  }
-  .status-metric {
-    padding: var(--sp-8) var(--sp-10);
-    background: var(--bg-neutral-subtle);
+  .ai-goal {
+    background: rgba(255,255,255,0.12);
     border-radius: var(--r-md);
+    padding: var(--sp-6) var(--sp-8);
+  }
+  .ai-goal-label { font-size: 12px; opacity: 0.85; margin-bottom: var(--sp-3); }
+  .ai-goal-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    margin-bottom: var(--sp-3);
+  }
+  .ai-goal-fill {
+    height: 100%;
+    background: var(--text-inverse);
+    border-radius: var(--r-sm);
+  }
+  .ai-goal-meta { font-size: 13px; font-weight: 600; }
+
+  /* ===== Recommendations ===== */
+  .recommendation-list { display: flex; flex-direction: column; gap: var(--sp-6); }
+  .recommendation {
+    display: flex;
+    gap: var(--sp-8);
+    padding: var(--sp-10);
+    background: var(--bg-neutral-subtle);
+    border-radius: var(--r-lg);
     border: 1px solid var(--border-default);
   }
-  .status-metric-warn {
+  .recommendation.rec-priority-high {
     background: var(--bg-warning-subtle);
     border-color: var(--amber-200);
   }
-  .status-metric-label {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-bottom: var(--sp-2);
-  }
-  .status-metric-value {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.03em;
-    margin-bottom: var(--sp-4);
-  }
-  .status-metric-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
-  .metric-compare-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-  }
-  .cmp-label { color: var(--text-tertiary); }
-  .cmp-value { font-weight: 600; }
-  .cmp-value.delta-up { color: var(--text-success); }
-  .cmp-value.delta-down { color: var(--text-danger); }
-  .cmp-value.delta-flat { color: var(--text-secondary); font-weight: 500; }
-
-  /* 원인 요약 */
-  .cause-summary {
-    padding: var(--sp-8) var(--sp-10);
-    background: var(--bg-brand-subtle);
-    border-radius: var(--r-md);
-    border-left: 3px solid var(--purple-500);
-  }
-  .cause-summary-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-brand);
-    margin-bottom: var(--sp-4);
-  }
-  .cause-list { display: flex; flex-direction: column; gap: var(--sp-3); }
-  .cause-item {
-    display: flex;
-    gap: var(--sp-4);
-    align-items: flex-start;
-  }
-  .cause-icon {
-    width: 22px;
-    height: 22px;
+  .rec-icon-area {
+    width: 100px;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+  }
+  .rec-icon {
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--bg-surface);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--shadow-subtle);
+  }
+  .rec-priority {
     font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .rec-priority-high .rec-priority { color: var(--text-warning); }
+  .rec-body { flex: 1; }
+  .rec-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--sp-4);
+    letter-spacing: -0.02em;
+  }
+  .rec-reason {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--sp-6);
+  }
+  .rec-reason strong { color: var(--text-primary); font-weight: 600; }
+  .rec-impact {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3);
+    padding: var(--sp-4) var(--sp-6);
+    background: var(--bg-surface);
+    border-radius: var(--r-md);
+    margin-bottom: var(--sp-6);
+    border: 1px solid var(--border-default);
+  }
+  .impact-label { font-size: 12px; color: var(--text-tertiary); }
+  .impact-value { font-size: 14px; color: var(--text-primary); }
+  .impact-value strong { color: var(--text-brand); font-weight: 700; }
+  .rec-actions { display: flex; gap: var(--sp-3); }
+  .btn-ghost {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+  }
+  .btn-ghost:hover { color: var(--text-secondary); background: var(--bg-neutral-subtle); }
+
+  /* ===== AI Insights ===== */
+  .insight-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-6);
+  }
+  .ai-insight {
+    padding: var(--sp-8);
+    border-radius: var(--r-md);
+    border: 1px solid var(--border-default);
+  }
+  .ai-insight-positive {
+    background: var(--bg-success-subtle);
+    border-color: var(--green-200);
+  }
+  .ai-insight-warning {
+    background: var(--bg-warning-subtle);
+    border-color: var(--amber-200);
+  }
+  .ai-insight-info {
+    background: var(--bg-brand-subtle);
+    border-color: var(--purple-200);
+  }
+  .insight-tag {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: var(--sp-3);
+  }
+  .ai-insight-positive .insight-tag { color: var(--text-success); }
+  .ai-insight-warning .insight-tag { color: var(--text-warning); }
+  .ai-insight-info .insight-tag { color: var(--text-brand); }
+  .insight-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+  }
+  .insight-text strong { font-weight: 600; }
+
+  /* ===== Timeline ===== */
+  .timeline { display: flex; flex-direction: column; gap: var(--sp-4); }
+  .timeline-item {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: flex-start;
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--border-default);
+  }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-time {
+    width: 80px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+  .timeline-icon-success, .timeline-icon-info {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
     font-weight: 700;
   }
-  .cause-positive .cause-icon { color: var(--icon-success); }
-  .cause-info .cause-icon { color: var(--icon-brand); }
-  .cause-warning .cause-icon { color: var(--icon-warning); }
-  .cause-text {
+  .timeline-icon-success { background: var(--bg-success-subtle); color: var(--icon-success); }
+  .timeline-icon-info { background: var(--bg-brand-subtle); color: var(--icon-brand); }
+  .timeline-text {
     flex: 1;
     font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+  .timeline-text strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ===== v4 — AI mini insight (영역 카드 안 작은 박스) ===== */
+  .ai-mini-insight {
+    margin-top: var(--sp-6);
+    padding: var(--sp-4) var(--sp-6);
+    background: var(--bg-brand-subtle);
+    border-left: 3px solid var(--purple-500);
+    border-radius: var(--r-sm);
+    font-size: 12px;
     color: var(--text-primary);
     line-height: 1.5;
   }
-  .cause-text strong { font-weight: 600; }
+  .ai-mini-insight strong { font-weight: 600; }
+  .ai-mini-insight-warn {
+    background: var(--bg-warning-subtle);
+    border-left-color: var(--amber-500);
+  }
 
   /* ===== Header phase note (디자인 메모용) ===== */
   .design-note {
@@ -909,7 +1003,7 @@
 
     <!-- Design note (디자인 검토용 — 나중에 제거) -->
     <div class="design-note">
-      <strong>디자인 메모 (시안 4안 — CRM 상태 리포트, Phase 2 본질)</strong> · 3안 베이스 + 상단 "CRM 상태 리포트" 영역. 종합 상태(정상/주의/문제) · 전주 대비 변화 · 업종 평균 비교 · 원인 요약을 한 화면 상단에 응축. "성과를 보고 잘 되고 있는지 판단" 본질 직격.
+      <strong>디자인 메모 (시안 4안 — Phase 3 AI 분석·제안·실행)</strong> · 3안 다양한 영역 분석 + AI가 영역별 분석 → 추천 → 사용자 승인 → 실행. 현실적 Phase 3 구조. AI는 제안하고 사용자가 결정.
     </div>
 
     <!-- Page header -->
@@ -924,92 +1018,198 @@
       </div>
     </div>
 
-    <!-- ===== CRM 상태 리포트 (Phase 2 본질 — 상단 추가) ===== -->
+    <!-- ===== AI 분석 요약 (Hero) ===== -->
     <section class="report-section">
-      <div class="report-card status-report-card">
-        <div class="report-card-header">
-          <div class="report-card-title-area">
-            <div class="report-card-title">📊 CRM 상태 리포트</div>
-            <div class="report-card-meta">2026/04/01 ~ 2026/04/30 · 종합 상태 · 전주 대비 · 업종 평균 · 원인 요약</div>
-          </div>
-          <button class="btn-detail">상세 분석 →</button>
+      <div class="ai-hero">
+        <div class="ai-hero-left">
+          <div class="ai-badge">✨ AI 분석 정리됨</div>
+          <div class="ai-hero-title">이번 달 분석을 정리했어요. 추천 3건 결정 대기 중.</div>
+          <div class="ai-hero-meta">분석 인사이트 23건 · 추천 액션 3건 · 적용 완료 5건</div>
         </div>
-
-        <!-- 종합 상태 시그널 -->
-        <div class="status-signal status-signal-warn">
-          <div class="status-icon">⚠</div>
-          <div class="status-body">
-            <div class="status-headline">전반적으로 정상 — <strong>주의 캠페인 1건</strong></div>
-            <div class="status-sub">매출·전환·클릭률 모두 ▲ · 전주 및 업종 평균 대비 양호. <strong>회원가입 환영 ROAS 급락</strong> 확인 필요.</div>
-          </div>
-        </div>
-
-        <!-- 핵심 지표 비교 카드 -->
-        <div class="status-metric-grid">
-          <div class="status-metric">
-            <div class="status-metric-label">총 매출</div>
-            <div class="status-metric-value">₩12.34M</div>
-            <div class="status-metric-rows">
-              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-up">▲ 12%</span></div>
-              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-up">+5% ↑</span></div>
-            </div>
-          </div>
-          <div class="status-metric">
-            <div class="status-metric-label">총 전환</div>
-            <div class="status-metric-value">287건</div>
-            <div class="status-metric-rows">
-              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-up">▲ 8%</span></div>
-              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-flat">평균 수준</span></div>
-            </div>
-          </div>
-          <div class="status-metric status-metric-warn">
-            <div class="status-metric-label">평균 ROAS</div>
-            <div class="status-metric-value">42.8</div>
-            <div class="status-metric-rows">
-              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-down">▼ 12%</span></div>
-              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-down">-8% ↓</span></div>
-            </div>
-          </div>
-          <div class="status-metric">
-            <div class="status-metric-label">평균 클릭률</div>
-            <div class="status-metric-value">8.5%</div>
-            <div class="status-metric-rows">
-              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-up">▲ 0.3%p</span></div>
-              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-up">+1.2%p ↑</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 원인 요약 -->
-        <div class="cause-summary">
-          <div class="cause-summary-title">💡 원인 요약</div>
-          <div class="cause-list">
-            <div class="cause-item cause-positive">
-              <div class="cause-icon">▲</div>
-              <div class="cause-text"><strong>봄맞이 프로모션</strong>이 매출 견인 — ₩4.5M (전체 37%) · MSG · 04/08~04/21</div>
-            </div>
-            <div class="cause-item cause-info">
-              <div class="cause-icon">↑</div>
-              <div class="cause-text"><strong>MSG 클릭률 ▲0.3%p</strong> — 리마인드 콘텐츠 강화 효과로 추정</div>
-            </div>
-            <div class="cause-item cause-warning">
-              <div class="cause-icon">!</div>
-              <div class="cause-text"><strong>회원가입 환영 ROAS 급락</strong> — 평소 70+ → 52.5 · 발송 타이밍 재검토 권장</div>
+        <div class="ai-hero-right">
+          <div class="ai-goal">
+            <div class="ai-goal-label">월 매출 목표</div>
+            <div class="ai-goal-progress">
+              <div class="ai-goal-bar"><div class="ai-goal-fill" style="width: 82%;"></div></div>
+              <div class="ai-goal-meta">₩12.34M / ₩15.0M · 82%</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== 매출 요약 (Hero 역할) ===== -->
+    <!-- ===== AI 추천 액션 (메인) ===== -->
     <section class="report-section">
       <div class="report-card">
         <div class="report-card-header">
           <div class="report-card-title-area">
-            <div class="report-card-title">매출 요약</div>
-            <div class="report-card-meta">2026/04/01 ~ 2026/04/30 (30일간) · 비교 기간은 이전 30일</div>
+            <div class="report-card-title">🤖 AI 추천 액션</div>
+            <div class="report-card-meta">분석 데이터·과거 패턴 기반 · 결정 대기 3건</div>
           </div>
-          <button class="btn-detail">매출 분석 →</button>
+          <button class="btn-detail">전체 추천 →</button>
+        </div>
+
+        <div class="recommendation-list">
+
+          <!-- 추천 1: 자동 실행 권장 -->
+          <div class="recommendation rec-priority-high">
+            <div class="rec-icon-area">
+              <div class="rec-icon">⚡</div>
+              <div class="rec-priority">우선순위 높음</div>
+            </div>
+            <div class="rec-body">
+              <div class="rec-title">VIP 세그먼트 리텐션 캠페인을 시작할까요?</div>
+              <div class="rec-reason">
+                <strong>분석 결과</strong>: VIP 32명이 이탈 위험 신호 (마지막 구매 60일 초과 + 클릭률 ▼). 전월 대비 ▲12%.<br/>
+                <strong>예측 근거</strong>: 지난 6개월 동일 패턴 14회 → 평균 18% 복귀율. 단골 할인 메시지가 가장 효과적.
+              </div>
+              <div class="rec-impact">
+                <span class="impact-label">예상 효과</span>
+                <span class="impact-value">매출 <strong>+₩1.4M</strong> · 복귀 고객 <strong>+14명</strong></span>
+              </div>
+              <div class="rec-actions">
+                <button class="btn btn-primary">자동 발송 시작</button>
+                <button class="btn">검토 후 결정</button>
+                <button class="btn btn-ghost">거절</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 추천 2 -->
+          <div class="recommendation">
+            <div class="rec-icon-area">
+              <div class="rec-icon">📈</div>
+              <div class="rec-priority">기회</div>
+            </div>
+            <div class="rec-body">
+              <div class="rec-title">신규 고객 첫 구매 할인 캠페인을 만들까요?</div>
+              <div class="rec-reason">
+                <strong>분석 결과</strong>: 이번 달 신규 142명 중 첫 구매 전환율 31% (업계 평균 45%).<br/>
+                <strong>예측 근거</strong>: 첫 구매 10% 할인 메시지 도입 시 평균 전환율 ▲14%p.
+              </div>
+              <div class="rec-impact">
+                <span class="impact-label">예상 효과</span>
+                <span class="impact-value">매출 <strong>+₩1.2M</strong> · 신규 첫 구매 <strong>+20명</strong></span>
+              </div>
+              <div class="rec-actions">
+                <button class="btn btn-primary">캠페인 생성</button>
+                <button class="btn">근거 자세히</button>
+                <button class="btn btn-ghost">거절</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 추천 3 -->
+          <div class="recommendation">
+            <div class="rec-icon-area">
+              <div class="rec-icon">🛠</div>
+              <div class="rec-priority">최적화</div>
+            </div>
+            <div class="rec-body">
+              <div class="rec-title">장바구니 리마인드 발송 시간을 조정할까요?</div>
+              <div class="rec-reason">
+                <strong>분석 결과</strong>: 현재 발송(09:00)의 클릭률 4.2% → 14:00 발송 시 평균 7.8% (지난 30일 A/B 테스트).<br/>
+                <strong>예측 근거</strong>: 같은 시간대 장바구니 활동 피크 일치.
+              </div>
+              <div class="rec-impact">
+                <span class="impact-label">예상 효과</span>
+                <span class="impact-value">전환 <strong>+12%</strong> · 매출 <strong>+₩340K</strong></span>
+              </div>
+              <div class="rec-actions">
+                <button class="btn btn-primary">시간 자동 조정</button>
+                <button class="btn">A/B 결과 보기</button>
+                <button class="btn btn-ghost">거절</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== AI 분석 인사이트 ===== -->
+    <section class="report-section">
+      <div class="report-card">
+        <div class="report-card-header">
+          <div class="report-card-title-area">
+            <div class="report-card-title">🔍 AI 분석 인사이트</div>
+            <div class="report-card-meta">자동 발견 · 이번 달 누적 23건</div>
+          </div>
+          <button class="btn-detail">전체 인사이트 →</button>
+        </div>
+        <div class="insight-grid">
+          <div class="ai-insight ai-insight-positive">
+            <div class="insight-tag">📈 기여 발견</div>
+            <div class="insight-text"><strong>봄맞이 프로모션</strong>이 매출의 <strong>37% 견인</strong> — 동기간 첫 사례. 프로모션 패턴 학습 완료, 다음 시즌 자동 추천 예정.</div>
+          </div>
+          <div class="ai-insight ai-insight-warning">
+            <div class="insight-tag">⚠ 위험 감지</div>
+            <div class="insight-text"><strong>VIP 32명 이탈 신호</strong> — 마지막 구매 60일 초과. 리텐션 캠페인 자동 추천 (위 액션 참조).</div>
+          </div>
+          <div class="ai-insight ai-insight-info">
+            <div class="insight-tag">💡 패턴 발견</div>
+            <div class="insight-text">메시지 캠페인 <strong>오후 2시 발송</strong>이 클릭률 86% 더 높음 — 자동 발송 시간 조정 추천.</div>
+          </div>
+          <div class="ai-insight ai-insight-info">
+            <div class="insight-tag">🎯 세그먼트</div>
+            <div class="insight-text">신규 고객 첫 구매 <strong>전환율 31%</strong> (업계 평균 45%) — 첫 구매 캠페인 도입 추천.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== AI 추천 — 승인 후 실행 결과 ===== -->
+    <section class="report-section">
+      <div class="report-card">
+        <div class="report-card-header">
+          <div class="report-card-title-area">
+            <div class="report-card-title">⚙ 적용된 추천 결과</div>
+            <div class="report-card-meta">사용자가 승인한 AI 추천 — 실행 결과</div>
+          </div>
+          <button class="btn-detail">전체 로그 →</button>
+        </div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-time">오늘 11:03</div>
+            <div class="timeline-icon-success">✓</div>
+            <div class="timeline-text">
+              <strong>VIP 리텐션 캠페인 발송</strong> — 1,240건 발송 완료 · 현재 클릭률 9.2% · 예상 +14명 복귀
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-time">어제 14:00</div>
+            <div class="timeline-icon-success">✓</div>
+            <div class="timeline-text">
+              <strong>장바구니 리마인드 빈도 조정 적용</strong> — 1회/일 → 2회/일 · 이탈률 3% 감소 확인
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-time">3일 전</div>
+            <div class="timeline-icon-success">✓</div>
+            <div class="timeline-text">
+              <strong>신규 고객 환영 메시지 캠페인 생성</strong> — 142건 발송 · 전환율 41%
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-time">1주 전</div>
+            <div class="timeline-icon-info">ℹ</div>
+            <div class="timeline-text">
+              <strong>봄맞이 프로모션 패턴 학습 완료</strong> — 다음 시즌 동일 패턴 추천 예정
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 결과 요약 (간소) ===== -->
+    <section class="report-section">
+      <div class="report-card">
+        <div class="report-card-header">
+          <div class="report-card-title-area">
+            <div class="report-card-title">📊 결과 요약</div>
+            <div class="report-card-meta">2026/04/01 ~ 2026/04/30 · 비교 기간은 이전 30일</div>
+          </div>
+          <button class="btn-detail">상세 분석 →</button>
         </div>
         <div class="kpi-row-large">
           <div class="kpi-large">
@@ -1099,6 +1299,7 @@
               <div class="distribution-bar"><div class="distribution-fill" style="width: 17%; background: var(--amber-500);"></div></div>
             </div>
           </div>
+          <div class="ai-mini-insight">💡 <strong>SNS 유입 ▲28%</strong> — 광고 효과 좋음. 추천: 광고 예산 +15%</div>
         </div>
 
         <!-- 고객 요약 -->
@@ -1132,6 +1333,7 @@
               <div class="kpi-change"><span class="delta-down">▲ 12%</span></div>
             </div>
           </div>
+          <div class="ai-mini-insight ai-mini-insight-warn">⚠ <strong>VIP 32명 이탈 신호</strong> — 위 추천 액션 참조</div>
         </div>
 
       </div>
@@ -1173,6 +1375,7 @@
             <div class="funnel-h-bar" style="width: 8%;"></div>
           </div>
         </div>
+        <div class="ai-mini-insight">💡 <strong>장바구니 → 구매 36%</strong> 전월 ▲3%p — 리마인드 발송 시간 조정 효과 (위 추천 적용 결과)</div>
       </div>
     </section>
 

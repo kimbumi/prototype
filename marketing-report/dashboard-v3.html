@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>마케팅 성과 리포트 — Dashboard v3 (다양한 애널리틱스 요약)</title>
+<title>마케팅 성과 리포트 — Dashboard v4 (CRM 상태 리포트, Phase 2)</title>
 <style>
   /* ===== Foundation 1.2 tokens ===== */
   :root {
@@ -739,6 +739,129 @@
   .campaign-table tbody tr:last-child td { border-bottom: none; }
   .campaign-table tbody tr:hover { background: var(--bg-neutral-subtle); cursor: pointer; }
 
+  /* ===== v4 — CRM 상태 리포트 ===== */
+  .status-report-card { background: var(--bg-surface); }
+
+  .status-signal {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: center;
+    padding: var(--sp-8) var(--sp-10);
+    background: var(--bg-success-subtle);
+    border: 1px solid var(--green-200);
+    border-radius: var(--r-md);
+    margin-bottom: var(--sp-10);
+  }
+  .status-signal-warn {
+    background: var(--bg-warning-subtle);
+    border-color: var(--amber-200);
+  }
+  .status-signal-danger {
+    background: var(--bg-danger-subtle);
+    border-color: var(--red-200);
+  }
+  .status-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .status-body { flex: 1; }
+  .status-headline {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--sp-2);
+  }
+  .status-headline strong { color: var(--text-warning); }
+  .status-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .status-sub strong { color: var(--text-warning); font-weight: 600; }
+
+  /* 지표 비교 grid */
+  .status-metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-10);
+  }
+  .status-metric {
+    padding: var(--sp-8) var(--sp-10);
+    background: var(--bg-neutral-subtle);
+    border-radius: var(--r-md);
+    border: 1px solid var(--border-default);
+  }
+  .status-metric-warn {
+    background: var(--bg-warning-subtle);
+    border-color: var(--amber-200);
+  }
+  .status-metric-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--sp-2);
+  }
+  .status-metric-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    margin-bottom: var(--sp-4);
+  }
+  .status-metric-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .metric-compare-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .cmp-label { color: var(--text-tertiary); }
+  .cmp-value { font-weight: 600; }
+  .cmp-value.delta-up { color: var(--text-success); }
+  .cmp-value.delta-down { color: var(--text-danger); }
+  .cmp-value.delta-flat { color: var(--text-secondary); font-weight: 500; }
+
+  /* 원인 요약 */
+  .cause-summary {
+    padding: var(--sp-8) var(--sp-10);
+    background: var(--bg-brand-subtle);
+    border-radius: var(--r-md);
+    border-left: 3px solid var(--purple-500);
+  }
+  .cause-summary-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-brand);
+    margin-bottom: var(--sp-4);
+  }
+  .cause-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .cause-item {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: flex-start;
+  }
+  .cause-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .cause-positive .cause-icon { color: var(--icon-success); }
+  .cause-info .cause-icon { color: var(--icon-brand); }
+  .cause-warning .cause-icon { color: var(--icon-warning); }
+  .cause-text {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+  .cause-text strong { font-weight: 600; }
+
   /* ===== Header phase note (디자인 메모용) ===== */
   .design-note {
     background: var(--bg-warning-subtle);
@@ -786,7 +909,7 @@
 
     <!-- Design note (디자인 검토용 — 나중에 제거) -->
     <div class="design-note">
-      <strong>디자인 메모 (시안 3안 — 다양한 애널리틱스 요약)</strong> · 캠페인만 X. 유입·고객·RFM·쇼핑 퍼널·CRM 다양한 분석을 요약 카드로. 고객이 보고 싶은 내용을 시스템이 요약·인사이트로 제공하는 종합 대시보드.
+      <strong>디자인 메모 (시안 4안 — CRM 상태 리포트, Phase 2 본질)</strong> · 3안 베이스 + 상단 "CRM 상태 리포트" 영역. 종합 상태(정상/주의/문제) · 전주 대비 변화 · 업종 평균 비교 · 원인 요약을 한 화면 상단에 응축. "성과를 보고 잘 되고 있는지 판단" 본질 직격.
     </div>
 
     <!-- Page header -->
@@ -800,6 +923,83 @@
         <button class="btn btn-primary"><span class="btn-icon">📥</span> 보고서 다운로드</button>
       </div>
     </div>
+
+    <!-- ===== CRM 상태 리포트 (Phase 2 본질 — 상단 추가) ===== -->
+    <section class="report-section">
+      <div class="report-card status-report-card">
+        <div class="report-card-header">
+          <div class="report-card-title-area">
+            <div class="report-card-title">📊 CRM 상태 리포트</div>
+            <div class="report-card-meta">2026/04/01 ~ 2026/04/30 · 종합 상태 · 전주 대비 · 업종 평균 · 원인 요약</div>
+          </div>
+          <button class="btn-detail">상세 분석 →</button>
+        </div>
+
+        <!-- 종합 상태 시그널 -->
+        <div class="status-signal status-signal-warn">
+          <div class="status-icon">⚠</div>
+          <div class="status-body">
+            <div class="status-headline">전반적으로 정상 — <strong>주의 캠페인 1건</strong></div>
+            <div class="status-sub">매출·전환·클릭률 모두 ▲ · 전주 및 업종 평균 대비 양호. <strong>회원가입 환영 ROAS 급락</strong> 확인 필요.</div>
+          </div>
+        </div>
+
+        <!-- 핵심 지표 비교 카드 -->
+        <div class="status-metric-grid">
+          <div class="status-metric">
+            <div class="status-metric-label">총 매출</div>
+            <div class="status-metric-value">₩12.34M</div>
+            <div class="status-metric-rows">
+              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-up">▲ 12%</span></div>
+              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-up">+5% ↑</span></div>
+            </div>
+          </div>
+          <div class="status-metric">
+            <div class="status-metric-label">총 전환</div>
+            <div class="status-metric-value">287건</div>
+            <div class="status-metric-rows">
+              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-up">▲ 8%</span></div>
+              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-flat">평균 수준</span></div>
+            </div>
+          </div>
+          <div class="status-metric status-metric-warn">
+            <div class="status-metric-label">평균 ROAS</div>
+            <div class="status-metric-value">42.8</div>
+            <div class="status-metric-rows">
+              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-down">▼ 12%</span></div>
+              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-down">-8% ↓</span></div>
+            </div>
+          </div>
+          <div class="status-metric">
+            <div class="status-metric-label">평균 클릭률</div>
+            <div class="status-metric-value">8.5%</div>
+            <div class="status-metric-rows">
+              <div class="metric-compare-row"><span class="cmp-label">전주 대비</span><span class="cmp-value delta-up">▲ 0.3%p</span></div>
+              <div class="metric-compare-row"><span class="cmp-label">업종 평균</span><span class="cmp-value delta-up">+1.2%p ↑</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 원인 요약 -->
+        <div class="cause-summary">
+          <div class="cause-summary-title">💡 원인 요약</div>
+          <div class="cause-list">
+            <div class="cause-item cause-positive">
+              <div class="cause-icon">▲</div>
+              <div class="cause-text"><strong>봄맞이 프로모션</strong>이 매출 견인 — ₩4.5M (전체 37%) · MSG · 04/08~04/21</div>
+            </div>
+            <div class="cause-item cause-info">
+              <div class="cause-icon">↑</div>
+              <div class="cause-text"><strong>MSG 클릭률 ▲0.3%p</strong> — 리마인드 콘텐츠 강화 효과로 추정</div>
+            </div>
+            <div class="cause-item cause-warning">
+              <div class="cause-icon">!</div>
+              <div class="cause-text"><strong>회원가입 환영 ROAS 급락</strong> — 평소 70+ → 52.5 · 발송 타이밍 재검토 권장</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ===== 매출 요약 (Hero 역할) ===== -->
     <section class="report-section">
