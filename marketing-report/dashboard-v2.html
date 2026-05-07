@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마케팅 성과 리포트 — Dashboard v2 (훑기 중심)</title>
+<style>
+  /* ===== Foundation 1.2 tokens ===== */
+  :root {
+    /* Color — Gray */
+    --gray-0: #FFFFFF;
+    --gray-25: #FAFBFC;
+    --gray-50: #F4F6F8;
+    --gray-100: #EDF0F3;
+    --gray-150: #E3E7EC;
+    --gray-200: #D5DAE1;
+    --gray-300: #B8C0CC;
+    --gray-400: #8D97A5;
+    --gray-500: #6B7685;
+    --gray-600: #525C6A;
+    --gray-700: #3D4654;
+    --gray-800: #2A3040;
+    --gray-900: #1A1F2B;
+    --gray-950: #111318;
+
+    /* Color — Status */
+    --red-50:  #FEF2F2; --red-200: #FECACA; --red-500: #EF4444; --red-600: #DC2626; --red-700: #B91C1C;
+    --amber-50: #FFFBEB; --amber-200: #FDE68A; --amber-500: #F59E0B; --amber-600: #D97706; --amber-700: #B45309;
+    --green-50: #F0FDF4; --green-200: #BBF7D0; --green-500: #22C55E; --green-600: #16A34A; --green-700: #15803D;
+    --blue-50:  #EFF6FF; --blue-200: #BFDBFE; --blue-500: #3B82F6; --blue-600: #2563EB; --blue-700: #1D4ED8;
+    --purple-50: #F1F0FF; --purple-200: #C1BDFF; --purple-500: #837AFF; --purple-600: #6F5CEB; --purple-700: #5739D0;
+
+    /* Semantic */
+    --bg-app: var(--gray-25);
+    --bg-surface: var(--gray-0);
+    --bg-neutral-subtle: var(--gray-50);
+    --bg-brand-subtle: var(--purple-50);
+    --bg-warning-subtle: var(--amber-50);
+    --bg-success-subtle: var(--green-50);
+    --bg-danger-subtle: var(--red-50);
+
+    --text-primary: var(--gray-800);
+    --text-secondary: var(--gray-600);
+    --text-tertiary: var(--gray-400);
+    --text-disabled: var(--gray-200);
+    --text-inverse: var(--gray-0);
+    --text-brand: var(--purple-700);
+    --text-danger: var(--red-700);
+    --text-warning: var(--amber-700);
+    --text-success: var(--green-700);
+    --text-info: var(--blue-700);
+
+    --icon-primary: var(--gray-700);
+    --icon-secondary: var(--gray-500);
+    --icon-tertiary: var(--gray-400);
+    --icon-brand: var(--purple-600);
+    --icon-success: var(--green-600);
+    --icon-warning: var(--amber-600);
+    --icon-danger: var(--red-600);
+
+    --border-default: var(--gray-150);
+    --border-strong: var(--gray-200);
+    --border-brand: var(--purple-500);
+
+    /* Spacing */
+    --sp-1: 2px; --sp-2: 4px; --sp-3: 6px; --sp-4: 8px;
+    --sp-5: 10px; --sp-6: 12px; --sp-8: 16px; --sp-10: 20px;
+    --sp-12: 24px; --sp-16: 32px; --sp-20: 40px; --sp-24: 48px;
+
+    /* Radius */
+    --r-xs: 2px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 12px; --r-2xl: 16px;
+
+    /* Shadow */
+    --shadow-subtle: 0px 4px 12px rgba(0,0,0,0.04);
+    --shadow-elevated: 0px 4px 12px rgba(0,0,0,0.15);
+  }
+
+  /* ===== Reset ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-app);
+    color: var(--text-primary);
+    font-size: 14px;
+    letter-spacing: -0.02em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Layout ===== */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 254px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-default);
+    flex-shrink: 0;
+    padding: var(--sp-12) 0;
+  }
+  .main { flex: 1; padding: var(--sp-12); }
+
+  /* Sidebar */
+  .logo { padding: 0 var(--sp-12) var(--sp-12); font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .nav-section { padding: var(--sp-3) var(--sp-8); }
+  .nav-section + .nav-section { margin-top: var(--sp-6); }
+  .nav-title { font-size: 11px; color: var(--text-tertiary); margin-bottom: var(--sp-2); padding: 0 var(--sp-4); font-weight: 500; }
+  .nav-item {
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 14px;
+    color: var(--text-secondary);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    margin-bottom: var(--sp-1);
+  }
+  .nav-item:hover { background: var(--bg-neutral-subtle); }
+  .nav-item.active { background: var(--bg-brand-subtle); color: var(--text-brand); font-weight: 600; }
+
+  /* ===== Page header ===== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: var(--sp-12);
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: var(--sp-12);
+  }
+  .page-title-area .title {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+  }
+  .page-title-area .subtitle {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: var(--sp-2);
+  }
+  .header-actions { display: flex; gap: var(--sp-4); align-items: center; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-6);
+    border-radius: var(--r-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    transition: all 0.1s;
+  }
+  .btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .btn-primary {
+    background: var(--purple-500);
+    color: var(--text-inverse);
+    border-color: var(--purple-500);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--purple-600); border-color: var(--purple-600); color: var(--text-inverse); }
+  .btn-icon { font-size: 14px; }
+
+  /* ===== Section ===== */
+  .section { margin-bottom: var(--sp-12); }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-6);
+  }
+  .section-icon { font-size: 18px; }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .section-meta { font-size: 12px; color: var(--text-tertiary); margin-left: auto; }
+
+  /* ===== Insights ===== */
+  .insights {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-xl);
+    padding: var(--sp-10) var(--sp-12);
+  }
+  .insight-list { display: flex; flex-direction: column; gap: var(--sp-4); }
+  .insight-item {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: flex-start;
+    padding: var(--sp-3) 0;
+  }
+  .insight-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .insight-icon.positive { background: var(--bg-success-subtle); color: var(--icon-success); }
+  .insight-icon.warning { background: var(--bg-warning-subtle); color: var(--icon-warning); }
+  .insight-icon.info { background: var(--bg-brand-subtle); color: var(--icon-brand); }
+  .insight-text { font-size: 14px; color: var(--text-primary); line-height: 1.5; }
+  .insight-text strong { font-weight: 600; }
+  .insight-meta { font-size: 12px; color: var(--text-tertiary); margin-top: var(--sp-1); }
+
+  .phase-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-3);
+    background: var(--bg-brand-subtle);
+    color: var(--text-brand);
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: var(--sp-2);
+  }
+
+  /* ===== KPI cards ===== */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.4fr;
+    gap: var(--sp-6);
+  }
+  .kpi-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-xl);
+    padding: var(--sp-10) var(--sp-12);
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--sp-3);
+    font-weight: 500;
+  }
+  .kpi-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+  }
+  .kpi-change {
+    font-size: 12px;
+    margin-top: var(--sp-2);
+    color: var(--text-tertiary);
+  }
+  .kpi-change .delta-up { color: var(--text-success); font-weight: 500; }
+  .kpi-change .delta-down { color: var(--text-danger); font-weight: 500; }
+  .kpi-change .delta-flat { color: var(--text-tertiary); font-weight: 500; }
+
+  /* Channel share card */
+  .share-card { display: flex; flex-direction: column; gap: var(--sp-5); justify-content: center; }
+  .share-row { display: flex; align-items: center; gap: var(--sp-4); }
+  .share-channel {
+    width: 36px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .share-bar-container {
+    flex: 1;
+    height: 8px;
+    background: var(--gray-100);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+  }
+  .share-bar-fill { height: 100%; border-radius: var(--r-sm); }
+  .share-bar-fill.msg { background: var(--purple-500); }
+  .share-bar-fill.ons { background: var(--blue-500); }
+  .share-meta { font-size: 12px; color: var(--text-secondary); min-width: 110px; text-align: right; }
+
+  /* ===== Channel cards ===== */
+  .channel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+  .channel-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-xl);
+    padding: var(--sp-10) var(--sp-12);
+  }
+  .channel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sp-8);
+  }
+  .channel-title { display: flex; align-items: center; gap: var(--sp-3); }
+  .channel-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .channel-link {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .channel-link:hover { color: var(--text-brand); }
+
+  /* Funnel */
+  .funnel { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-8); }
+  .funnel-step { flex: 1; min-width: 0; }
+  .funnel-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: var(--sp-1); }
+  .funnel-value { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .funnel-delta { font-size: 11px; margin-top: var(--sp-1); color: var(--text-tertiary); }
+  .funnel-delta .delta-up { color: var(--text-success); }
+  .funnel-delta .delta-down { color: var(--text-danger); }
+  .funnel-arrow {
+    color: var(--text-disabled);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Sub metrics */
+  .sub-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-4);
+    padding-top: var(--sp-6);
+    border-top: 1px solid var(--border-default);
+  }
+  .sub-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: var(--sp-2) 0;
+  }
+  .sub-label { font-size: 12px; color: var(--text-tertiary); }
+  .sub-value { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .sub-value .delta-up { color: var(--text-success); font-size: 11px; margin-left: var(--sp-1); }
+  .sub-value .delta-down { color: var(--text-danger); font-size: 11px; margin-left: var(--sp-1); }
+
+  /* ===== Campaign table ===== */
+  .table-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-xl);
+    padding: var(--sp-10) var(--sp-12);
+  }
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sp-6);
+  }
+  .filter-group { display: flex; gap: var(--sp-3); }
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-2) var(--sp-4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-md);
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    cursor: pointer;
+  }
+  .filter-pill:hover { border-color: var(--border-strong); }
+  .filter-pill .pill-arrow { font-size: 10px; color: var(--text-tertiary); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-default);
+    letter-spacing: 0;
+  }
+  th.right, td.right { text-align: right; }
+  tbody td {
+    padding: var(--sp-6) var(--sp-4);
+    font-size: 13px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-default);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-neutral-subtle); cursor: pointer; }
+
+  .channel-badge {
+    display: inline-block;
+    padding: var(--sp-1) var(--sp-3);
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: var(--r-sm);
+  }
+  .channel-badge.msg { background: var(--purple-50); color: var(--text-brand); }
+  .channel-badge.ons { background: var(--blue-50); color: var(--text-info); }
+
+  .delta-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .delta-up { color: var(--text-success); }
+  .delta-down { color: var(--text-danger); }
+  .delta-flat { color: var(--text-tertiary); }
+  .alert-icon { color: var(--icon-warning); margin-left: var(--sp-1); }
+
+  /* ===== Channel summary (v2 — 한 줄 요약) ===== */
+  .channel-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+  .channel-summary-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-xl);
+    padding: var(--sp-10) var(--sp-12);
+  }
+  .channel-summary-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-8);
+  }
+  .channel-summary-header .channel-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .channel-summary-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: var(--sp-6);
+  }
+  .metric-block { display: flex; flex-direction: column; gap: var(--sp-1); }
+  .metric-label { font-size: 11px; color: var(--text-tertiary); }
+  .metric-value { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.03em; }
+  .metric-delta { font-size: 11px; }
+  .metric-delta .delta-up { color: var(--text-success); font-weight: 500; }
+  .metric-delta .delta-down { color: var(--text-danger); font-weight: 500; }
+  .metric-delta.delta-flat { color: var(--text-tertiary); }
+
+  /* See-all link */
+  .see-all {
+    margin-top: var(--sp-8);
+    padding-top: var(--sp-6);
+    border-top: 1px solid var(--border-default);
+    text-align: center;
+  }
+  .see-all a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .see-all a:hover { color: var(--text-brand); }
+
+  /* ===== Header phase note (디자인 메모용) ===== */
+  .design-note {
+    background: var(--bg-warning-subtle);
+    border: 1px dashed var(--amber-500);
+    border-radius: var(--r-md);
+    padding: var(--sp-4) var(--sp-6);
+    margin-bottom: var(--sp-12);
+    font-size: 12px;
+    color: var(--text-warning);
+  }
+  .design-note strong { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="logo">알파푸시</div>
+    <nav class="nav-section">
+      <div class="nav-title">메인</div>
+      <div class="nav-item">홈</div>
+      <div class="nav-item active">마케팅 성과 리포트</div>
+    </nav>
+    <nav class="nav-section">
+      <div class="nav-title">캠페인</div>
+      <div class="nav-item">메시지 캠페인</div>
+      <div class="nav-item">온사이트 캠페인</div>
+      <div class="nav-item">알림 메시지</div>
+    </nav>
+    <nav class="nav-section">
+      <div class="nav-title">분석</div>
+      <div class="nav-item">메시지 애널리틱스</div>
+      <div class="nav-item">온사이트 애널리틱스</div>
+    </nav>
+    <nav class="nav-section">
+      <div class="nav-title">설정</div>
+      <div class="nav-item">설정</div>
+    </nav>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <main class="main">
+
+    <!-- Design note (디자인 검토용 — 나중에 제거) -->
+    <div class="design-note">
+      <strong>디자인 메모 (시안 2안 — 훑기 중심)</strong> · 분석·보고서 X. 가볍게 KPI · 채널별 요약 · Top 캠페인만. 캡쳐해서 보고에 그대로 활용 가능한 응축 형태.
+    </div>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-title-area">
+        <div class="title">마케팅 성과 리포트</div>
+        <div class="subtitle">ONS·MSG 통합 분석 · 인사이트 · 보고</div>
+      </div>
+      <div class="header-actions">
+        <button class="filter-pill">기간: 2026-04 (지난 달) <span class="pill-arrow">▾</span></button>
+        <button class="btn btn-primary"><span class="btn-icon">📥</span> 보고서 다운로드</button>
+      </div>
+    </div>
+
+    <!-- ===== KPI overview ===== -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-icon">📊</span>
+        <span class="section-title">종합 성과</span>
+        <span class="section-meta">분석 컨텍스트 · 전월 대비</span>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">총 매출 기여</div>
+          <div class="kpi-value">₩12,340,000</div>
+          <div class="kpi-change"><span class="delta-up">▲ 12%</span> 전월 대비</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">총 전환</div>
+          <div class="kpi-value">287건</div>
+          <div class="kpi-change"><span class="delta-up">▲ 8%</span> 전월 대비</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">총 클릭</div>
+          <div class="kpi-value">1,892회</div>
+          <div class="kpi-change"><span class="delta-down">▼ 3%</span> 전월 대비</div>
+        </div>
+        <div class="kpi-card share-card">
+          <div class="kpi-label">채널별 매출 기여</div>
+          <div class="share-row">
+            <div class="share-channel">MSG</div>
+            <div class="share-bar-container"><div class="share-bar-fill msg" style="width: 74%;"></div></div>
+            <div class="share-meta">₩9.14M · 74%</div>
+          </div>
+          <div class="share-row">
+            <div class="share-channel">ONS</div>
+            <div class="share-bar-container"><div class="share-bar-fill ons" style="width: 26%;"></div></div>
+            <div class="share-meta">₩3.20M · 26%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Channel summary (간소화) ===== -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-icon">📨</span>
+        <span class="section-title">채널별 요약</span>
+      </div>
+      <div class="channel-summary-grid">
+
+        <!-- MSG 한 줄 요약 -->
+        <div class="channel-summary-card">
+          <div class="channel-summary-header">
+            <span class="channel-badge msg">MSG</span>
+            <span class="channel-name">메시지 캠페인</span>
+            <a class="channel-link" href="#">상세 →</a>
+          </div>
+          <div class="channel-summary-metrics">
+            <div class="metric-block">
+              <div class="metric-label">매출</div>
+              <div class="metric-value">₩9.14M</div>
+              <div class="metric-delta"><span class="delta-up">▲ 14%</span></div>
+            </div>
+            <div class="metric-block">
+              <div class="metric-label">전환</div>
+              <div class="metric-value">198</div>
+              <div class="metric-delta"><span class="delta-up">▲ 6%</span></div>
+            </div>
+            <div class="metric-block">
+              <div class="metric-label">ROAS</div>
+              <div class="metric-value">64.4</div>
+              <div class="metric-delta"><span class="delta-up">▲ 2%</span></div>
+            </div>
+            <div class="metric-block">
+              <div class="metric-label">비용</div>
+              <div class="metric-value">₩142K</div>
+              <div class="metric-delta delta-flat">─</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ONS 한 줄 요약 -->
+        <div class="channel-summary-card">
+          <div class="channel-summary-header">
+            <span class="channel-badge ons">ONS</span>
+            <span class="channel-name">온사이트 캠페인</span>
+            <a class="channel-link" href="#">상세 →</a>
+          </div>
+          <div class="channel-summary-metrics">
+            <div class="metric-block">
+              <div class="metric-label">매출</div>
+              <div class="metric-value">₩3.20M</div>
+              <div class="metric-delta"><span class="delta-up">▲ 10%</span></div>
+            </div>
+            <div class="metric-block">
+              <div class="metric-label">전환</div>
+              <div class="metric-value">89</div>
+              <div class="metric-delta"><span class="delta-up">▲ 12%</span></div>
+            </div>
+            <div class="metric-block">
+              <div class="metric-label">노출</div>
+              <div class="metric-value">45,200</div>
+              <div class="metric-delta"><span class="delta-up">▲ 5%</span></div>
+            </div>
+            <div class="metric-block">
+              <div class="metric-label">클릭</div>
+              <div class="metric-value">1,200</div>
+              <div class="metric-delta"><span class="delta-up">▲ 8%</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== Top campaigns (간소) ===== -->
+    <section class="section">
+      <div class="section-header">
+        <span class="section-icon">🏆</span>
+        <span class="section-title">Top 캠페인</span>
+        <span class="section-meta">매출 기준 · 전체 12건 중 5건</span>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>캠페인명</th>
+              <th>채널</th>
+              <th class="right">매출</th>
+              <th class="right">전환</th>
+              <th class="right">변화</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>봄맞이 프로모션</td>
+              <td><span class="channel-badge msg">MSG</span></td>
+              <td class="right">₩4,500,000</td>
+              <td class="right">89</td>
+              <td class="right"><span class="delta-badge delta-up">▲ 18%</span></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>회원가입 환영</td>
+              <td><span class="channel-badge msg">MSG</span></td>
+              <td class="right">₩2,100,000</td>
+              <td class="right">45</td>
+              <td class="right"><span class="delta-badge delta-down">▼ 25%</span></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>신상품 추천 배너</td>
+              <td><span class="channel-badge ons">ONS</span></td>
+              <td class="right">₩1,900,000</td>
+              <td class="right">34</td>
+              <td class="right"><span class="delta-badge delta-up">▲ 11%</span></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>장바구니 리마인드</td>
+              <td><span class="channel-badge msg">MSG</span></td>
+              <td class="right">₩1,540,000</td>
+              <td class="right">38</td>
+              <td class="right"><span class="delta-badge delta-flat">─</span></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>VIP 회원 혜택</td>
+              <td><span class="channel-badge msg">MSG</span></td>
+              <td class="right">₩1,290,000</td>
+              <td class="right">27</td>
+              <td class="right"><span class="delta-badge delta-up">▲ 5%</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="see-all"><a class="channel-link" href="#">전체 캠페인 리스트 보기 →</a></div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
